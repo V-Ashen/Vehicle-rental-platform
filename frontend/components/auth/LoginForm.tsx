@@ -111,6 +111,13 @@ export function LoginForm() {
         </svg>
         Google
       </button>
+
+      <div className="text-center text-sm text-slate-600 dark:text-slate-400 mt-6">
+        Don't have an account?{' '}
+        <a href="/register" className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors">
+          Register here
+        </a>
+      </div>
     </form>
   );
 }
