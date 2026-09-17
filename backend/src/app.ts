@@ -17,14 +17,24 @@ import maintenanceRoutes from './routes/maintenance.routes';
 import reportRoutes from './routes/reports.routes';
 import paymentRoutes from './routes/payments.routes';
 import webhookRoutes from './routes/webhooks.routes';
+import cronRoutes from './routes/cron.routes';
+import { helmetConfig, authRateLimiter, globalRateLimiter } from './middlewares/securityMiddleware';
 
 const app = express();
 
+app.use(helmetConfig); // 1. Secure HTTP Headers
 app.use(cors());
 app.use(express.json());
 
+// 2. Apply Rate Limiters
+app.use(globalRateLimiter);
+app.use('/api/v1/auth', authRateLimiter); // Stricter limit for auth routes
+
 // Public Webhooks (No Auth required)
 app.use('/api/v1/webhooks', webhookRoutes);
+
+// Internal Cron Jobs (Secured by secret header)
+app.use('/api/v1/cron', cronRoutes);
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
