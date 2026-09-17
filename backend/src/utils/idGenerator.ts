@@ -22,6 +22,7 @@ export enum IdPrefix {
   MAINTENANCE = 'MNT',
   VEHDOC = 'VDC',
   NOTIFICATION = 'NTF',
+  PAYMENT = 'PAY',
   PAYMENT_REQUEST = 'PRQ',
 }
 

@@ -15,11 +15,16 @@ import vehicleRoutes from './routes/vehicles.routes';
 import rentalRoutes from './routes/rentals.routes';
 import maintenanceRoutes from './routes/maintenance.routes';
 import reportRoutes from './routes/reports.routes';
+import paymentRoutes from './routes/payments.routes';
+import webhookRoutes from './routes/webhooks.routes';
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Public Webhooks (No Auth required)
+app.use('/api/v1/webhooks', webhookRoutes);
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
@@ -34,6 +39,7 @@ app.use('/api/v1/vehicles', vehicleRoutes);
 app.use('/api/v1/rentals', rentalRoutes);
 app.use('/api/v1/maintenance', maintenanceRoutes);
 app.use('/api/v1/reports', reportRoutes);
+app.use('/api/v1/payments', paymentRoutes);
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
