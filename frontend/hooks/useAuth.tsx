@@ -20,12 +20,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true);
       setUser(firebaseUser);
       if (firebaseUser) {
         try {
           // Call login endpoint to fetch the synced DB user profile
           const res = await apiClient.post('/auth/login');
-          setDbUser(res.data.data);
+          setDbUser(res.data.data.user);
         } catch (error) {
           console.error("Failed to fetch DB user", error);
         }

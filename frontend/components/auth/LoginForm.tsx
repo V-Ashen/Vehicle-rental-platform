@@ -21,9 +21,9 @@ export function LoginForm() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       const res = await apiClient.post('/auth/login');
-      const userType = res.data.data.userType;
+      const user = res.data.data.user;
       
-      if (userType === 'SAAS_ADMIN') router.push('/admin/dashboard');
+      if (user?.userType === 'SAAS_ADMIN') router.push('/admin/dashboard');
       else router.push('/owner/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to login');
@@ -41,9 +41,9 @@ export function LoginForm() {
       const token = await result.user.getIdToken();
       
       const res = await apiClient.post('/auth/google', { token });
-      const userType = res.data.data.user.userType;
+      const user = res.data.data.user;
       
-      if (userType === 'SAAS_ADMIN') router.push('/admin/dashboard');
+      if (user?.userType === 'SAAS_ADMIN') router.push('/admin/dashboard');
       else router.push('/owner/dashboard');
     } catch (err: any) {
       setError(err.message || 'Google sign-in failed');
