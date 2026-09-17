@@ -136,7 +136,7 @@ export class AuthService {
       throw new AppError(`User account is ${user.status}`, 'FORBIDDEN', 403);
     }
 
-    const tenant = await tenantRepo.findById(user.tenantId, user.tenantId);
+    const tenant = await tenantRepo.findById(user.tenantId);
     if (!tenant) {
       throw new AppError('Tenant not found', 'TENANT_NOT_FOUND', 404);
     }
@@ -146,14 +146,16 @@ export class AuthService {
     }
 
     // Check subscription status
-    const subs = await subRepo.findByQuery('tenantId', '==', tenant.id, tenant.id);
+    const subs = await subRepo.findByQuery('tenantId', '==', tenant.id);
     const activeSub = subs.find(s => s.status === 'ACTIVE' || s.status === 'TRIAL');
     
     if (!activeSub) {
       throw new AppError('No active subscription found', 'PAYMENT_REQUIRED', 402);
     }
 
-    if (activeSub.status === 'TRIAL' && new Date() > activeSub.trialEndAt) {
+    // Convert Firestore Timestamp to Date for comparison if necessary
+    const trialEndAt = activeSub.trialEndAt.toDate ? activeSub.trialEndAt.toDate() : new Date(activeSub.trialEndAt);
+    if (activeSub.status === 'TRIAL' && new Date() > trialEndAt) {
       // Logic to transition to EXPIRED could go here in a background job or middleware
       throw new AppError('Trial expired', 'PAYMENT_REQUIRED', 402);
     }

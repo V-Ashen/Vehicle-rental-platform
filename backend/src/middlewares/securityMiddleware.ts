@@ -5,12 +5,13 @@ import rateLimit from 'express-rate-limit';
 export const helmetConfig = helmet({
   contentSecurityPolicy: false, // Often disabled in APIs if serving frontend separately
   crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Fixes CORS blocking for decoupled frontends
 });
 
 // 2. Auth Rate Limiter - Strict for brute force protection (5 requests per 15 minutes)
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
-  max: 5, 
+  max: process.env.NODE_ENV === 'production' ? 5 : 100, 
   message: { success: false, message: 'Too many authentication attempts, please try again later.' },
   standardHeaders: true, 
   legacyHeaders: false,
