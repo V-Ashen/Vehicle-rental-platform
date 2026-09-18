@@ -109,11 +109,22 @@ export interface Vehicle extends BaseEntity {
   year: number;
   vehicleType: string;
   currentOdometer: number;
+  status: 'AVAILABLE' | 'RESERVED' | 'ON_RENT' | 'MAINTENANCE' | 'INACTIVE';
+  
+  // Pricing
   dailyRate: number;
+  weeklyRate?: number;
+  monthlyRate?: number;
   extraKmRate: number;
   includedKmPerDay: number;
   depositAmount: number;
-  status: 'AVAILABLE' | 'RESERVED' | 'ON_RENT' | 'MAINTENANCE';
+  
+  // Details
+  transmission?: 'AUTO' | 'MANUAL';
+  fuelType?: string;
+  seats?: number;
+  colour?: string;
+  imageUrl?: string;
 }
 
 export interface Rental extends BaseEntity {

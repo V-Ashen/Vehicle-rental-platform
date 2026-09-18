@@ -25,7 +25,7 @@ export function TenantActionModal({ isOpen, setIsOpen, tenant }: TenantActionMod
 
   const updateProfileMutation = useMutation({
     mutationFn: async (status: string) => {
-      await apiClient.patch(`/admin/tenants/${tenant.id}/profile`, { profileStatus: status });
+      await apiClient.patch(`/admin/tenants/${tenant.id}/profile-status`, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
@@ -38,7 +38,7 @@ export function TenantActionModal({ isOpen, setIsOpen, tenant }: TenantActionMod
 
   const updateAccountMutation = useMutation({
     mutationFn: async (status: string) => {
-      await apiClient.patch(`/admin/tenants/${tenant.id}/account`, { accountStatus: status });
+      await apiClient.patch(`/admin/tenants/${tenant.id}/account-status`, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });

@@ -17,10 +17,9 @@ export class OwnerUploadService {
         contentType
       });
 
-      // Google Cloud Storage public URL format (assuming bucket is public readable, or you get via token)
-      // Since it's Firebase storage, the standard public URL without a download token might require bucket rules
-      // For simplicity in this spec, we return the path so they can query it later or standard GCS url
-      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+      // Construct the standard Firebase Storage public URL format (relies on Firebase Security Rules)
+      const encodedFilePath = encodeURIComponent(filePath);
+      const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedFilePath}?alt=media`;
 
       return {
         signedUrl,

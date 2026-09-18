@@ -29,7 +29,7 @@ export default function CustomersPage() {
     },
   });
 
-  const customers = responseData?.data || [];
+  const customers = Array.isArray(responseData) ? responseData : (responseData?.data || []);
 
   const filteredCustomers = customers.filter((customer: any) => 
     customer.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -13,6 +13,7 @@ if (!getApps().length) {
     initializeApp({
       credential: cert(JSON.parse(serviceAccountKey)),
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+      projectId: JSON.parse(serviceAccountKey).project_id
     });
   } else {
     initializeApp({
@@ -21,6 +22,6 @@ if (!getApps().length) {
   }
 }
 
-export const db = getFirestore();
+export const db = getFirestore(getApps()[0], 'default');
 export const auth = getAuth();
 export const storage = getStorage();

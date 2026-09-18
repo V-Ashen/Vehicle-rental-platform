@@ -12,46 +12,32 @@ export class OwnerDashboardService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const [
-      totalVehicles,
-      availableVehicles,
-      onRentVehicles,
-      inMaintenanceVehicles,
-      pickupsToday,
-      returnsToday,
-      overdueRentals
-    ] = await Promise.all([
-      vehicleRepo.count([{ field: 'tenantId', operator: '==', value: tenantId }]),
-      vehicleRepo.count([
-        { field: 'tenantId', operator: '==', value: tenantId },
-        { field: 'status', operator: '==', value: 'AVAILABLE' }
-      ]),
-      vehicleRepo.count([
-        { field: 'tenantId', operator: '==', value: tenantId },
-        { field: 'status', operator: '==', value: 'RENTED' }
-      ]),
-      vehicleRepo.count([
-        { field: 'tenantId', operator: '==', value: tenantId },
-        { field: 'status', operator: '==', value: 'MAINTENANCE' }
-      ]),
-      rentalRepo.count([
-        { field: 'tenantId', operator: '==', value: tenantId },
-        { field: 'status', operator: 'in', value: ['CONFIRMED', 'IN_PROGRESS'] },
-        { field: 'startDate', operator: '>=', value: today },
-        { field: 'startDate', operator: '<', value: tomorrow }
-      ]),
-      rentalRepo.count([
-        { field: 'tenantId', operator: '==', value: tenantId },
-        { field: 'status', operator: '==', value: 'IN_PROGRESS' },
-        { field: 'endDate', operator: '>=', value: today },
-        { field: 'endDate', operator: '<', value: tomorrow }
-      ]),
-      rentalRepo.count([
-        { field: 'tenantId', operator: '==', value: tenantId },
-        { field: 'status', operator: '==', value: 'IN_PROGRESS' },
-        { field: 'endDate', operator: '<', value: today }
-      ])
+    const [vehicles, rentals] = await Promise.all([
+      vehicleRepo.findByQuery('tenantId', '==', tenantId),
+      rentalRepo.findByQuery('tenantId', '==', tenantId)
     ]);
+
+    const totalVehicles = vehicles.length;
+    const availableVehicles = vehicles.filter((v: any) => v.status === 'AVAILABLE').length;
+    const onRentVehicles = vehicles.filter((v: any) => v.status === 'ON_RENT' || v.status === 'RENTED').length;
+    const inMaintenanceVehicles = vehicles.filter((v: any) => v.status === 'MAINTENANCE').length;
+
+    const pickupsToday = rentals.filter((r: any) => 
+      (r.status === 'CONFIRMED' || r.status === 'IN_PROGRESS') && 
+      new Date(r.startDate) >= today && 
+      new Date(r.startDate) < tomorrow
+    ).length;
+
+    const returnsToday = rentals.filter((r: any) => 
+      r.status === 'IN_PROGRESS' && 
+      new Date(r.endDate) >= today && 
+      new Date(r.endDate) < tomorrow
+    ).length;
+
+    const overdueRentals = rentals.filter((r: any) => 
+      r.status === 'IN_PROGRESS' && 
+      new Date(r.endDate) < today
+    ).length;
 
     return {
       vehicles: {

@@ -1,5 +1,6 @@
 import 'express-async-errors';
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
+// Trigger restart
 import cors from 'cors';
 import { errorHandler } from './middlewares/errorHandler';
 import authRoutes from './routes/auth.routes';
