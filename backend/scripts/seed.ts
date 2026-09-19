@@ -1,20 +1,5 @@
-import { initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import dotenv from 'dotenv';
+import { db } from '../src/config/firebase';
 import { generateId, IdPrefix } from '../src/utils/idGenerator';
-
-dotenv.config();
-
-const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT;
-if (serviceAccountKey) {
-  initializeApp({
-    credential: cert(JSON.parse(serviceAccountKey)),
-  });
-} else {
-  initializeApp();
-}
-
-const db = getFirestore();
 
 const seedPackages = async () => {
   const packagesCollection = db.collection('packages');

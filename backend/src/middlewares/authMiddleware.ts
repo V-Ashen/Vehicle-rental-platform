@@ -87,7 +87,7 @@ export const requireOperationalTenant = async (req: Request, res: Response, next
     const tenantRepo = new TenantRepository();
     const subRepo = new SubscriptionRepository();
 
-    const tenant = await tenantRepo.findById(user.tenantId, user.tenantId);
+    const tenant = await tenantRepo.findById(user.tenantId);
     if (!tenant) return next(new AppError('Tenant not found', 'NOT_FOUND', 404));
 
     if (tenant.accountStatus !== 'ACTIVE') {

@@ -21,9 +21,9 @@ export function LoginForm() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       const res = await apiClient.post('/auth/login');
-      const userType = res.data.data.userType;
+      const user = res.data.data.user;
       
-      if (userType === 'SAAS_ADMIN') router.push('/admin/dashboard');
+      if (user?.userType === 'SAAS_ADMIN') router.push('/admin/dashboard');
       else router.push('/owner/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to login');
@@ -41,9 +41,9 @@ export function LoginForm() {
       const token = await result.user.getIdToken();
       
       const res = await apiClient.post('/auth/google', { token });
-      const userType = res.data.data.user.userType;
+      const user = res.data.data.user;
       
-      if (userType === 'SAAS_ADMIN') router.push('/admin/dashboard');
+      if (user?.userType === 'SAAS_ADMIN') router.push('/admin/dashboard');
       else router.push('/owner/dashboard');
     } catch (err: any) {
       setError(err.message || 'Google sign-in failed');
@@ -111,6 +111,13 @@ export function LoginForm() {
         </svg>
         Google
       </button>
+
+      <div className="text-center text-sm text-slate-600 dark:text-slate-400 mt-6">
+        Don't have an account?{' '}
+        <a href="/register" className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors">
+          Register here
+        </a>
+      </div>
     </form>
   );
 }
