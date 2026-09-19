@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 const formSchema = z.object({
   fullName: z.string().min(2, "Full name is required."),
   nicPassport: z.string().min(5, "NIC or Passport is required."),
+  drivingLicence: z.string().min(5, "Driving Licence is required."),
   mobile: z.string().min(10, "Mobile number is required."),
   email: z.string().email("Invalid email address.").optional().or(z.literal("")),
   address: z.string().min(5, "Address is required."),
@@ -47,6 +48,7 @@ export function CustomerFormModal({ isOpen, setIsOpen, initialData }: CustomerFo
     defaultValues: {
       fullName: "",
       nicPassport: "",
+      drivingLicence: "",
       mobile: "",
       email: "",
       address: "",
@@ -58,6 +60,7 @@ export function CustomerFormModal({ isOpen, setIsOpen, initialData }: CustomerFo
       form.reset({
         fullName: initialData.fullName || "",
         nicPassport: initialData.nicPassport || "",
+        drivingLicence: initialData.drivingLicence || "",
         mobile: initialData.mobile || "",
         email: initialData.email || "",
         address: initialData.address || "",
@@ -66,6 +69,7 @@ export function CustomerFormModal({ isOpen, setIsOpen, initialData }: CustomerFo
       form.reset({
         fullName: "",
         nicPassport: "",
+        drivingLicence: "",
         mobile: "",
         email: "",
         address: "",
@@ -125,19 +129,34 @@ export function CustomerFormModal({ isOpen, setIsOpen, initialData }: CustomerFo
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="nicPassport"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>NIC / Passport</FormLabel>
-                  <FormControl>
-                    <Input placeholder="National ID or Passport" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="nicPassport"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>NIC / Passport</FormLabel>
+                    <FormControl>
+                      <Input placeholder="National ID or Passport" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="drivingLicence"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Driving Licence</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Licence Number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}

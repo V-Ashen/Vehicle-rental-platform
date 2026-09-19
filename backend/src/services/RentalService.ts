@@ -14,6 +14,55 @@ const handoverRepo = new RentalHandoverRepository();
 const notificationService = new NotificationService();
 
 export class RentalService {
+  async getAllRentals(tenantId: string) {
+    try {
+      const rentalsSnapshot = await db.collection('rentals')
+        .where('tenantId', '==', tenantId)
+        .orderBy('createdAt', 'desc')
+        .get();
+
+      if (rentalsSnapshot.empty) return [];
+
+      const rentals = rentalsSnapshot.docs.map(doc => doc.data());
+
+      // Fetch related customer and vehicle data
+      const customerIds = [...new Set(rentals.map(r => r.customerId))];
+      const vehicleIds = [...new Set(rentals.map(r => r.vehicleId))];
+
+      const customersMap = new Map();
+      const vehiclesMap = new Map();
+
+      if (customerIds.length > 0) {
+        // Chunk into groups of 10 for Firestore 'in' query if needed, but since we are simple, we'll just fetch them
+        // To be safe, we'll fetch them individually since tenant repositories usually do that well
+        for (const cid of customerIds) {
+          const cust = await customerRepo.findById(cid, tenantId);
+          if (cust) customersMap.set(cid, cust.fullName);
+        }
+      }
+
+      if (vehicleIds.length > 0) {
+        for (const vid of vehicleIds) {
+          const veh = await vehicleRepo.findById(vid, tenantId);
+          if (veh) vehiclesMap.set(vid, veh.registrationNumber);
+        }
+      }
+
+      return rentals.map(r => ({
+        ...r,
+        pickupAt: r.pickupAt?.toDate?.()?.toISOString() || r.pickupAt,
+        expectedReturnAt: r.expectedReturnAt?.toDate?.()?.toISOString() || r.expectedReturnAt,
+        actualReturnAt: r.actualReturnAt?.toDate?.()?.toISOString() || r.actualReturnAt,
+        createdAt: r.createdAt?.toDate?.()?.toISOString() || r.createdAt,
+        updatedAt: r.updatedAt?.toDate?.()?.toISOString() || r.updatedAt,
+        customerName: customersMap.get(r.customerId) || 'Unknown Customer',
+        vehicleRegistration: vehiclesMap.get(r.vehicleId) || 'Unknown Vehicle',
+        rentalNumber: r.id.substring(4) // e.g. RNT-1234 -> 1234 for short display
+      }));
+    } catch (e: any) {
+      throw new AppError(`Failed to fetch rentals: ${e.message}`, 'INTERNAL_SERVER_ERROR', 500);
+    }
+  }
   async createRental(tenantId: string, data: any, userId: string) {
     const { customerId, vehicleId, pickupAt, expectedReturnAt } = data;
 
