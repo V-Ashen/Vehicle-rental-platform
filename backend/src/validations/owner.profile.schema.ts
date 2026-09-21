@@ -8,6 +8,11 @@ export const updateOwnerProfileSchema = z.object({
     address: z.string().min(5).optional(),
     city: z.string().min(2).optional(),
     brNumber: z.string().optional(),
-    logoUrl: z.string().url().optional()
+    logoUrl: z.string().url().optional(),
+    
+    // Rental Rules Settings
+    gracePeriodMinutes: z.number().min(0).optional(),
+    hourlyLateCharge: z.number().min(0).optional(),
+    defaultIncludedKmPerDay: z.number().min(0).optional()
   })
 });

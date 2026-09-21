@@ -19,6 +19,11 @@ export interface Tenant extends BaseEntity {
   logoUrl?: string;
   profileStatus: 'INCOMPLETE' | 'PENDING' | 'VERIFIED' | 'REJECTED';
   accountStatus: 'ACTIVE' | 'SUSPENDED' | 'DISABLED';
+  
+  // Rental Rules Settings
+  gracePeriodMinutes?: number;
+  hourlyLateCharge?: number;
+  defaultIncludedKmPerDay?: number;
 }
 
 export interface User extends BaseEntity {
