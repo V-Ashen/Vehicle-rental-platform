@@ -5,7 +5,7 @@ const tenantRepo = new TenantRepository();
 
 export class OwnerProfileService {
   async getProfile(tenantId: string) {
-    const tenant = await tenantRepo.findById(tenantId, tenantId);
+    const tenant = await tenantRepo.findById(tenantId);
     if (!tenant) throw new AppError('Tenant not found', 'NOT_FOUND', 404);
     return tenant;
   }
@@ -21,7 +21,7 @@ export class OwnerProfileService {
   }
 
   async submitProfile(tenantId: string, userId: string) {
-    const tenant = await tenantRepo.findById(tenantId, tenantId);
+    const tenant = await tenantRepo.findById(tenantId);
     if (!tenant) throw new AppError('Tenant not found', 'NOT_FOUND', 404);
 
     if (!tenant.ownerNic || !tenant.phone || !tenant.address || !tenant.city) {

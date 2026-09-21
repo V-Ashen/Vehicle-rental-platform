@@ -1,5 +1,6 @@
 import 'express-async-errors';
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
+// Trigger restart
 import cors from 'cors';
 import { errorHandler } from './middlewares/errorHandler';
 import authRoutes from './routes/auth.routes';
@@ -10,6 +11,7 @@ import adminPaymentRequestRoutes from './routes/admin.payment-requests.routes';
 import adminDashboardRoutes from './routes/admin.dashboard.routes';
 import ownerProfileRoutes from './routes/owner.profile.routes';
 import ownerUploadRoutes from './routes/owner.upload.routes';
+import ownerDashboardRoutes from './routes/owner.dashboard.routes';
 import customerRoutes from './routes/customers.routes';
 import vehicleRoutes from './routes/vehicles.routes';
 import rentalRoutes from './routes/rentals.routes';
@@ -42,8 +44,9 @@ app.use('/api/v1/admin/packages', adminPackageRoutes);
 app.use('/api/v1/admin/tenants', adminTenantRoutes);
 app.use('/api/v1/admin/payment-requests', adminPaymentRequestRoutes);
 app.use('/api/v1/admin/dashboard', adminDashboardRoutes);
-app.use('/api/v1/owner/profile', ownerProfileRoutes);
 app.use('/api/v1/owner/upload', ownerUploadRoutes);
+app.use('/api/v1/owner/profile', ownerProfileRoutes);
+app.use('/api/v1/owner/dashboard', ownerDashboardRoutes);
 app.use('/api/v1/customers', customerRoutes);
 app.use('/api/v1/vehicles', vehicleRoutes);
 app.use('/api/v1/rentals', rentalRoutes);

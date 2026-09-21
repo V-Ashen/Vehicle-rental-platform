@@ -28,7 +28,7 @@ export class AdminTenantService {
   }
 
   async getTenant(id: string) {
-    const tenant = await tenantRepo.findById(id, id);
+    const tenant = await tenantRepo.findById(id);
     if (!tenant) {
       throw new AppError('Tenant not found', 'NOT_FOUND', 404);
     }
@@ -43,7 +43,7 @@ export class AdminTenantService {
   }
 
   async updateProfileStatus(id: string, status: any, adminId: string) {
-    const updated = await tenantRepo.update(id, { profileStatus: status, updatedBy: adminId }, id);
+    const updated = await tenantRepo.update(id, { profileStatus: status, updatedBy: adminId });
     if (!updated) {
       throw new AppError('Tenant not found', 'NOT_FOUND', 404);
     }
@@ -51,7 +51,7 @@ export class AdminTenantService {
   }
 
   async updateAccountStatus(id: string, status: any, adminId: string) {
-    const updated = await tenantRepo.update(id, { accountStatus: status, updatedBy: adminId }, id);
+    const updated = await tenantRepo.update(id, { accountStatus: status, updatedBy: adminId });
     if (!updated) {
       throw new AppError('Tenant not found', 'NOT_FOUND', 404);
     }

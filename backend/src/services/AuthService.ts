@@ -136,6 +136,21 @@ export class AuthService {
       throw new AppError(`User account is ${user.status}`, 'FORBIDDEN', 403);
     }
 
+    // Admin users don't have a normal Tenant or Subscription
+    if (user.userType === 'SAAS_ADMIN') {
+      return {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          roleId: user.roleId,
+          userType: user.userType,
+          tenantId: user.tenantId
+        },
+        role: 'SAAS_ADMIN'
+      };
+    }
+
     const tenant = await tenantRepo.findById(user.tenantId);
     if (!tenant) {
       throw new AppError('Tenant not found', 'TENANT_NOT_FOUND', 404);
