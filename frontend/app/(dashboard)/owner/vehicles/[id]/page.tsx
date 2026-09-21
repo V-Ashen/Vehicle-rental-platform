@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useState, use } from "react";
+import VehicleDocumentsTab from "@/components/owner/vehicles/VehicleDocumentsTab";
 
 export default function VehicleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = use(params);
@@ -131,7 +133,15 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="mt-8">
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="mb-6 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="documents">Documents</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="overview">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Image & Specs */}
         <div className="lg:col-span-1 space-y-6">
           <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
@@ -243,6 +253,14 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
             </CardContent>
           </Card>
         </div>
+      </div>
+      </TabsContent>
+      
+      <TabsContent value="documents">
+        <VehicleDocumentsTab vehicleId={vehicleId} />
+      </TabsContent>
+      
+      </Tabs>
       </div>
     </div>
   );

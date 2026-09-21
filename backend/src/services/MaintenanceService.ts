@@ -25,6 +25,8 @@ export class MaintenanceService {
         const recordData = {
           id: recordId,
           tenantId,
+          vehicleRegistration: vehicle.registrationNumber,
+          vehicleMakeModel: `${vehicle.make} ${vehicle.model}`,
           ...rest,
           serviceDate: new Date(serviceDate),
           nextServiceDate: nextServiceDate ? new Date(nextServiceDate) : null,
