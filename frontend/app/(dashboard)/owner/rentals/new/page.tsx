@@ -152,7 +152,16 @@ export default function NewRentalWizardPage() {
         <Stepper steps={STEPS} currentStep={currentStep} className="mb-8 max-w-2xl mx-auto" />
 
         <FormProvider {...methods}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          <form 
+            onSubmit={handleSubmit(onSubmit)} 
+            className="space-y-8"
+            onKeyDown={(e) => {
+              // Prevent Enter key from auto-submitting the form, unless it's on a textarea or button
+              if (e.key === 'Enter' && e.target instanceof HTMLElement && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') {
+                e.preventDefault();
+              }
+            }}
+          >
             
             <div className={currentStep === 1 ? "block" : "hidden"}>
               <Step1Customer />

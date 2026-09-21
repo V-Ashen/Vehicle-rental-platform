@@ -63,6 +63,48 @@ export class RentalService {
       throw new AppError(`Failed to fetch rentals: ${e.message}`, 'INTERNAL_SERVER_ERROR', 500);
     }
   }
+
+  async getRentalById(rentalId: string, tenantId: string) {
+    try {
+      const rentalDoc = await db.collection('rentals').doc(rentalId).get();
+      if (!rentalDoc.exists) throw new AppError('Rental not found', 'NOT_FOUND', 404);
+      
+      const rental = rentalDoc.data();
+      if (rental?.tenantId !== tenantId) throw new AppError('Rental not found', 'NOT_FOUND', 404);
+
+      // Fetch related vehicle
+      const vehicle = await vehicleRepo.findById(rental.vehicleId, tenantId);
+
+      // Fetch related pickup handover to get startOdometer
+      const handoverQuery = await db.collection('rentalHandovers')
+        .where('rentalId', '==', rentalId)
+        .where('type', '==', 'PICKUP')
+        .limit(1)
+        .get();
+
+      let pickupHandover = null;
+      if (!handoverQuery.empty) {
+        pickupHandover = handoverQuery.docs[0].data();
+      }
+
+      return {
+        ...rental,
+        pickupAt: rental.pickupAt?.toDate?.()?.toISOString() || rental.pickupAt,
+        expectedReturnAt: rental.expectedReturnAt?.toDate?.()?.toISOString() || rental.expectedReturnAt,
+        actualReturnAt: rental.actualReturnAt?.toDate?.()?.toISOString() || rental.actualReturnAt,
+        createdAt: rental.createdAt?.toDate?.()?.toISOString() || rental.createdAt,
+        updatedAt: rental.updatedAt?.toDate?.()?.toISOString() || rental.updatedAt,
+        vehicleRegistration: vehicle?.registrationNumber || 'Unknown',
+        vehicleMakeModel: `${vehicle?.make || ''} ${vehicle?.model || ''}`.trim(),
+        startOdometer: pickupHandover?.odometer || 0,
+        pickupHandover
+      };
+    } catch (e: any) {
+      if (e instanceof AppError) throw e;
+      throw new AppError(`Failed to fetch rental: ${e.message}`, 'INTERNAL_SERVER_ERROR', 500);
+    }
+  }
+
   async createRental(tenantId: string, data: any, userId: string) {
     const { customerId, vehicleId, pickupAt, expectedReturnAt } = data;
 

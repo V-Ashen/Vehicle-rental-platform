@@ -97,12 +97,13 @@ export default function RentalsPage() {
                 <TableHead>Dates</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Balance</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={7} className="text-center py-12">
                     <div className="flex flex-col items-center justify-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
                       <p className="text-slate-500">Loading rentals...</p>
@@ -111,7 +112,7 @@ export default function RentalsPage() {
                 </TableRow>
               ) : filteredRentals.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-slate-500">
+                  <TableCell colSpan={7} className="text-center py-12 text-slate-500">
                     <CalendarClock className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                     <p className="text-lg font-medium text-slate-900 dark:text-white mb-1">No rentals found</p>
                     <p>Get started by creating a new rental reservation.</p>
@@ -121,8 +122,7 @@ export default function RentalsPage() {
                 filteredRentals.map((rental: any) => (
                   <TableRow 
                     key={rental.id}
-                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                    onClick={() => router.push(`/owner/rentals/${rental.id}`)}
+                    className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                   >
                     <TableCell className="font-medium text-indigo-600 dark:text-indigo-400">
                       {rental.rentalNumber}
@@ -157,6 +157,26 @@ export default function RentalsPage() {
                       <div className="text-xs text-red-500">
                         Bal: Rs. {rental.balanceDue?.toLocaleString() || 0}
                       </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {rental.status === 'ON_RENT' ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100"
+                          onClick={() => router.push(`/owner/rentals/${rental.id}/return`)}
+                        >
+                          Process Return
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => router.push(`/owner/rentals/${rental.id}`)}
+                        >
+                          View Details
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

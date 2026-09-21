@@ -10,6 +10,13 @@ export class RentalController {
     res.status(200).json({ success: true, data: result });
   }
 
+  async getById(req: Request, res: Response) {
+    const tenantId = (req as any).tenant.id;
+    const { id } = req.params;
+    const result = await rentalService.getRentalById(id, tenantId);
+    res.status(200).json({ success: true, data: result });
+  }
+
   async create(req: Request, res: Response) {
     const tenantId = (req as any).tenant.id;
     const userId = (req as any).ownerUser?.id || (req as any).staffUser?.id;
