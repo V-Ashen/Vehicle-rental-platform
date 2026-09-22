@@ -12,7 +12,7 @@ export class RentalController {
 
   async getById(req: Request, res: Response) {
     const tenantId = (req as any).tenant.id;
-    const { id } = req.params;
+    const id = req.params.id as string;
     const result = await rentalService.getRentalById(id, tenantId);
     res.status(200).json({ success: true, data: result });
   }

@@ -1,9 +1,12 @@
+import { Resend } from 'resend';
 import { db } from '../config/firebase';
 import { NotificationService } from './NotificationService';
 import { AppError } from '../utils/AppError';
 import { generateId, IdPrefix } from '../utils/idGenerator';
+import { getEmailTemplate } from '../utils/emailTemplates';
 
 const notificationService = new NotificationService();
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export class CronService {
   async processNotifications() {
@@ -24,20 +27,73 @@ export class CronService {
     for (const doc of snapshot.docs) {
       const data = doc.data();
       try {
-        // Simulate sending via AWS SNS / Resend
-        // await emailClient.send({...});
-        
+        let recipientEmail: string | null = data.email || null;
+        let userName: string | undefined = data.userName;
+
+        if (!recipientEmail && data.userId && data.userId !== 'TENANT_ADMIN') {
+          const userDoc = await db.collection('users').doc(data.userId).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            recipientEmail = userData?.email || null;
+            userName = userData?.fullName || userData?.name;
+          }
+        }
+
+        if (!recipientEmail && data.tenantId) {
+          const ownerQuery = await db.collection('users')
+            .where('tenantId', '==', data.tenantId)
+            .limit(1)
+            .get();
+          if (!ownerQuery.empty) {
+            const userData = ownerQuery.docs[0].data();
+            recipientEmail = userData.email;
+            userName = userData.fullName || userData.name;
+          }
+        }
+
+        if (!recipientEmail) {
+          throw new Error(`User email not found for userId: ${data.userId}, tenantId: ${data.tenantId}`);
+        }
+
+        const template = getEmailTemplate(
+          data.type,
+          {
+            name: userName,
+            resetLink: data.message && data.message.startsWith('http') ? data.message : undefined,
+            amount: data.amount,
+            planName: data.planName,
+            expiryDays: data.expiryDays
+          },
+          data.message
+        );
+
+        const emailSubject = data.subject || template.subject;
+        const htmlContent = template.html;
+
+        const { error } = await resend.emails.send({
+          from: 'noreply@booking.pixzoralabs.com',
+          to: recipientEmail,
+          subject: emailSubject,
+          html: htmlContent
+        });
+
+        if (error) {
+          throw new Error(`Resend dispatch error: ${error.message}`);
+        }
+
         // Mark as sent
-        batch.update(doc.ref, { 
+        batch.update(doc.ref, {
           status: 'SENT',
+          sentAt: new Date(),
           updatedAt: new Date(),
           updatedBy: 'SYSTEM_CRON'
         });
         successCount++;
-      } catch (e) {
+      } catch (e: any) {
         console.error(`Failed to send notification ${doc.id}:`, e);
-        batch.update(doc.ref, { 
+        batch.update(doc.ref, {
           status: 'FAILED',
+          errorMessage: e?.message || 'Unknown error',
           updatedAt: new Date(),
           updatedBy: 'SYSTEM_CRON'
         });
@@ -51,7 +107,7 @@ export class CronService {
 
   async processDailySubscriptions() {
     const now = new Date();
-    
+
     // Calculate dates for reminders
     const plus7 = new Date(); plus7.setDate(now.getDate() + 7);
     const plus3 = new Date(); plus3.setDate(now.getDate() + 3);
@@ -59,13 +115,13 @@ export class CronService {
 
     const subscriptionsRef = db.collection('subscriptions');
     const tenantsRef = db.collection('tenants');
-    
+
     // We fetch active and trial subscriptions. 
     // In Firestore without a composite index, we can just fetch all ACTIVE/TRIAL and filter in-memory for this MVP, 
     // or query by status and filter by date.
-    
+
     const activeQ = await subscriptionsRef.where('status', 'in', ['ACTIVE', 'TRIAL']).get();
-    
+
     let remindersSent = 0;
     let expiredCount = 0;
 
@@ -82,7 +138,7 @@ export class CronService {
       if (diffDays === 7 || diffDays === 3 || diffDays === 1) {
         const notifId = generateId(IdPrefix.NOTIFICATION);
         const notifRef = db.collection('notifications').doc(notifId);
-        
+
         batch.set(notifRef, {
           id: notifId,
           tenantId: sub.tenantId,
@@ -99,11 +155,11 @@ export class CronService {
         });
         remindersSent++;
       }
-      
+
       // Expirations
       if (diffDays <= 0) {
         // Suspend the subscription
-        batch.update(doc.ref, { 
+        batch.update(doc.ref, {
           status: 'EXPIRED',
           updatedAt: new Date(),
           updatedBy: 'SYSTEM_CRON'

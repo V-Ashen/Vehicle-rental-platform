@@ -9,5 +9,6 @@ const authController = new AuthController();
 router.post('/register', validate(registerSchema), authController.register);
 router.post('/login', authController.login);
 router.post('/google', authController.googleLogin);
+router.post('/forgot-password', authController.forgotPassword);
 
 export default router;

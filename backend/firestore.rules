@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ----------------------------------------------------------------------
+    // IMPORTANT: 
+    // This platform uses a Node.js backend with the Firebase Admin SDK.
+    // The Admin SDK completely bypasses these security rules.
+    // To protect against direct client attacks (from frontend API keys),
+    // we block ALL direct read and write access from the client SDK.
+    // ----------------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

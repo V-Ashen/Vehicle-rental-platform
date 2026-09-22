@@ -6,7 +6,10 @@ import { generateId, IdPrefix } from '../utils/idGenerator';
 export class OwnerRolesController {
   async list(req: Request, res: Response) {
     const tenantId = (req as any).ownerUser.tenantId;
-    const snapshot = await db.collection('roles').where('tenantId', '==', tenantId).get();
+    const snapshot = await db.collection('roles')
+      .where('tenantId', '==', tenantId)
+      .where('status', '!=', 'INACTIVE')
+      .get();
     const roles = snapshot.docs.map(doc => doc.data());
     res.status(200).json({ success: true, data: roles });
   }
@@ -26,6 +29,7 @@ export class OwnerRolesController {
       tenantId,
       name,
       permissions,
+      status: 'ACTIVE',
       createdAt: new Date(),
       updatedAt: new Date(),
       createdBy: userId,
@@ -38,7 +42,7 @@ export class OwnerRolesController {
 
   async update(req: Request, res: Response) {
     const tenantId = (req as any).ownerUser.tenantId;
-    const roleId = req.params.id;
+    const roleId = req.params.id as string;
     const { name, permissions } = req.body;
 
     const roleRef = db.collection('roles').doc(roleId);
@@ -59,7 +63,7 @@ export class OwnerRolesController {
 
   async delete(req: Request, res: Response) {
     const tenantId = (req as any).ownerUser.tenantId;
-    const roleId = req.params.id;
+    const roleId = req.params.id as string;
 
     // Optional: Check if staff uses this role
     const staffRef = await db.collection('users').where('tenantId', '==', tenantId).where('roleId', '==', roleId).get();
@@ -68,7 +72,11 @@ export class OwnerRolesController {
     }
 
     const roleRef = db.collection('roles').doc(roleId);
-    await roleRef.delete();
+    await roleRef.update({
+      status: 'INACTIVE',
+      updatedAt: new Date(),
+      updatedBy: (req as any).ownerUser.id
+    });
     res.status(200).json({ success: true });
   }
 }

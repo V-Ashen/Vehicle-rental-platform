@@ -46,4 +46,23 @@ export class AuthController {
       data: result
     });
   }
+
+  async forgotPassword(req: Request, res: Response) {
+    const { email } = req.body;
+    
+    if (!email) {
+      throw new AppError('Email is required', 'VALIDATION_ERROR', 400);
+    }
+
+    // Process asynchronously, always return success immediately 
+    // to prevent email enumeration attacks
+    authService.forgotPassword(email).catch(err => {
+      console.error('Background forgot password error:', err);
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'If an account with that email exists, a reset link has been sent.'
+    });
+  }
 }

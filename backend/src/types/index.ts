@@ -24,6 +24,12 @@ export interface Tenant extends BaseEntity {
   gracePeriodMinutes?: number;
   hourlyLateCharge?: number;
   defaultIncludedKmPerDay?: number;
+
+  // Extended Settings
+  emailEnabled?: boolean;
+  smsEnabled?: boolean;
+  invoiceNotes?: string;
+  agreementTerms?: string;
 }
 
 export interface User extends BaseEntity {
@@ -106,16 +112,6 @@ export interface AuditLog {
   oldData?: any;
   newData?: any;
   timestamp: Date;
-}
-
-export interface Role {
-  id: string;
-  tenantId: string;
-  name: string;
-  permissions: string[]; // e.g. ['rentals.create', 'vehicles.view']
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: string;
 }
 
 export interface Staff {

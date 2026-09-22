@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Plus, User, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
@@ -25,6 +26,8 @@ import AddStaffModal from "./AddStaffModal";
 
 export default function StaffTab() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: staff, isLoading } = useQuery({
     queryKey: ["owner-staff"],
@@ -44,6 +47,33 @@ export default function StaffTab() {
 
   const getRoleName = (roleId: string) => {
     return roles?.find((r: any) => r.id === roleId)?.name || "Unknown Role";
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: async (staffId: string) => {
+      const res = await apiClient.delete(`/owner/staff/${staffId}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["owner-staff"] });
+      toast({
+        title: "Access Revoked",
+        description: "The staff member has been successfully removed.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Action Failed",
+        description: error.response?.data?.message || "Could not revoke staff access.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleRevoke = (staffId: string) => {
+    if (confirm("Are you sure you want to completely revoke access for this staff member? This cannot be undone.")) {
+      deleteMutation.mutate(staffId);
+    }
   };
 
   return (
@@ -127,7 +157,11 @@ export default function StaffTab() {
                         <DropdownMenuItem className="cursor-pointer">
                           <Pencil className="w-4 h-4 mr-2" /> Edit User
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950">
+                        <DropdownMenuItem 
+                          className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950"
+                          onClick={() => handleRevoke(user.id)}
+                          disabled={deleteMutation.isPending}
+                        >
                           <Trash2 className="w-4 h-4 mr-2" /> Revoke Access
                         </DropdownMenuItem>
                       </DropdownMenuContent>

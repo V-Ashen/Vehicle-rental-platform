@@ -1,0 +1,37 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Documents Folder (Tenant level)
+    match /documents/{tenantId}/{allPaths=**} {
+      // Allow read/write only if the user's custom claim or logic allows it.
+      // Since Firebase Auth doesn't map tenantId natively unless using custom claims,
+      // we at least ensure they are authenticated. 
+      // (Backend validation handles strict business logic).
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // Slips Folder (Payment requests)
+    match /slips/{tenantId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // General Public Files (e.g. Logos) if needed
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Default block all
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

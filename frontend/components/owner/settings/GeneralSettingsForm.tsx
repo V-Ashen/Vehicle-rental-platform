@@ -19,6 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Save } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 
 const generalSchema = z.object({
   businessName: z.string().min(2, "Business name is required"),
@@ -26,6 +28,10 @@ const generalSchema = z.object({
   phone: z.string().min(10, "Valid phone number is required"),
   address: z.string().min(5, "Address is required"),
   city: z.string().min(2, "City is required"),
+  emailEnabled: z.boolean().default(true),
+  smsEnabled: z.boolean().default(false),
+  invoiceNotes: z.string().optional(),
+  agreementTerms: z.string().optional(),
 });
 
 type GeneralFormValues = z.infer<typeof generalSchema>;
@@ -50,12 +56,20 @@ export default function GeneralSettingsForm() {
       phone: tenant.phone || "",
       address: tenant.address || "",
       city: tenant.city || "",
+      emailEnabled: tenant.emailEnabled !== false, // default true if undefined
+      smsEnabled: tenant.smsEnabled === true,
+      invoiceNotes: tenant.invoiceNotes || "",
+      agreementTerms: tenant.agreementTerms || "",
     } : {
       businessName: "",
       email: "",
       phone: "",
       address: "",
       city: "",
+      emailEnabled: true,
+      smsEnabled: false,
+      invoiceNotes: "",
+      agreementTerms: "",
     },
   });
 
@@ -67,7 +81,11 @@ export default function GeneralSettingsForm() {
         businessName: data.businessName,
         mobile: data.phone,
         address: data.address,
-        city: data.city
+        city: data.city,
+        emailEnabled: data.emailEnabled,
+        smsEnabled: data.smsEnabled,
+        invoiceNotes: data.invoiceNotes,
+        agreementTerms: data.agreementTerms
       });
       return res.data;
     },
@@ -188,6 +206,92 @@ export default function GeneralSettingsForm() {
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+              <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-4">Notification Preferences</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="emailEnabled"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-900/50">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Email Notifications</FormLabel>
+                        <CardDescription>
+                          Receive system alerts and updates via email.
+                        </CardDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="smsEnabled"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-900/50">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">SMS Notifications</FormLabel>
+                        <CardDescription>
+                          Receive critical alerts via SMS (charges apply).
+                        </CardDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+              <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-4">Document Templates</h3>
+              <div className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="invoiceNotes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Default Invoice Notes</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Thank you for your business! Payment is due within 7 days."
+                          className="min-h-[100px] bg-white dark:bg-slate-900"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="agreementTerms"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Standard Rental Agreement Terms</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="1. The renter agrees to return the vehicle in the same condition..."
+                          className="min-h-[150px] bg-white dark:bg-slate-900"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
