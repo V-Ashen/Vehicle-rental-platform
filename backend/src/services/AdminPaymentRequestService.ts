@@ -2,8 +2,10 @@ import { PaymentRequestRepository } from '../repositories/PaymentRequestReposito
 import { db } from '../config/firebase';
 import { AppError } from '../utils/AppError';
 import { generateId, IdPrefix } from '../utils/idGenerator';
+import { AuditLogService } from './AuditLogService';
 
 const prRepo = new PaymentRequestRepository();
+const auditService = new AuditLogService();
 
 export class AdminPaymentRequestService {
   async listPaymentRequests(limit: number = 20, cursor?: string, status?: string) {
@@ -85,10 +87,21 @@ export class AdminPaymentRequestService {
           updatedBy: adminId
         });
 
-        return { paymentId, status: 'APPROVED' };
+        return { paymentId, status: 'APPROVED', prData };
       });
 
-      return result;
+      // Log the audit event asynchronously
+      auditService.logAction(
+        result.prData.tenantId,
+        adminId,
+        'PAYMENT_APPROVED',
+        'BILLING',
+        id,
+        { status: 'PENDING' },
+        { status: 'APPROVED', paymentId: result.paymentId }
+      ).catch(err => console.error('Failed to write audit log', err));
+
+      return { paymentId: result.paymentId, status: result.status };
     } catch (e: any) {
       if (e instanceof AppError) throw e;
       throw new AppError(`Approval transaction failed: ${e.message}`, 'TRANSACTION_FAILED', 500);

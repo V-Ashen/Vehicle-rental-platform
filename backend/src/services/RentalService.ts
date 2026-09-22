@@ -106,7 +106,7 @@ export class RentalService {
   }
 
   async createRental(tenantId: string, data: any, userId: string) {
-    const { customerId, vehicleId, pickupAt, expectedReturnAt } = data;
+    const { customerId, vehicleId, pickupAt, expectedReturnAt, depositAmount } = data;
 
     // Validate customer
     const customer = await customerRepo.findById(customerId, tenantId);
@@ -180,6 +180,26 @@ export class RentalService {
 
         t.set(rentalRef, rentalData);
         createdRental = rentalData;
+
+        // Create Deposit record if applicable
+        if (depositAmount && depositAmount > 0) {
+          const depositId = generateId(IdPrefix.SYSTEM); // or DEP-
+          const depositRef = db.collection('deposits').doc(depositId);
+          t.set(depositRef, {
+            id: depositId,
+            tenantId,
+            rentalId,
+            customerId,
+            amount: depositAmount,
+            status: 'HELD',
+            deductedAmount: 0,
+            refundedAmount: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            createdBy: userId,
+            updatedBy: userId
+          });
+        }
       });
 
       // Fire and forget notification queueing (Retrofit for Phase 6)
@@ -320,6 +340,39 @@ export class RentalService {
 
         // D. Final Settlement
         const finalTotal = rental.baseRentalAmount + extraKmCharge + lateCharge + damageTotal + extraOtherCharges;
+
+        // E. Deposit Deductions
+        const depositQuery = db.collection('deposits')
+          .where('rentalId', '==', rentalId)
+          .where('status', '==', 'HELD')
+          .limit(1);
+        const depositSnapshot = await t.get(depositQuery);
+        
+        if (!depositSnapshot.empty) {
+          const depositDoc = depositSnapshot.docs[0];
+          const depositData = depositDoc.data();
+          
+          let amountToDeduct = 0;
+          const excessCharges = extraKmCharge + lateCharge + damageTotal + extraOtherCharges;
+          
+          if (excessCharges > 0) {
+            amountToDeduct = Math.min(excessCharges, depositData.amount);
+          }
+
+          const refundedAmount = depositData.amount - amountToDeduct;
+          let newStatus = 'REFUNDED';
+          if (amountToDeduct > 0) {
+            newStatus = amountToDeduct === depositData.amount ? 'APPLIED' : 'PARTIALLY_REFUNDED';
+          }
+
+          t.update(depositDoc.ref, {
+            status: newStatus,
+            deductedAmount: amountToDeduct,
+            refundedAmount,
+            updatedAt: new Date(),
+            updatedBy: userId
+          });
+        }
 
         // --- DATABASE UPDATES ---
         

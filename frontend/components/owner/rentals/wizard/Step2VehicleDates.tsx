@@ -98,7 +98,7 @@ export default function Step2VehicleDates() {
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <Popover>
-                      <PopoverTrigger asChild>
+                      <PopoverTrigger render={
                         <FormControl>
                           <Button
                             variant={"outline"}
@@ -110,7 +110,7 @@ export default function Step2VehicleDates() {
                             {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                           </Button>
                         </FormControl>
-                      </PopoverTrigger>
+                      } />
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
@@ -160,7 +160,7 @@ export default function Step2VehicleDates() {
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <Popover>
-                      <PopoverTrigger asChild>
+                      <PopoverTrigger render={
                         <FormControl>
                           <Button
                             variant={"outline"}
@@ -172,14 +172,14 @@ export default function Step2VehicleDates() {
                             {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                           </Button>
                         </FormControl>
-                      </PopoverTrigger>
+                      } />
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
                           selected={field.value}
                           onSelect={(date) => handleDateSelect(date, "expectedReturnAt", field.value)}
                           initialFocus
-                          disabled={(date) => pickupAt ? date < pickupAt : date < new Date()}
+                          disabled={(date) => pickupAt ? date < new Date(new Date(pickupAt).setHours(0,0,0,0)) : date < new Date(new Date().setHours(0,0,0,0))}
                         />
                       </PopoverContent>
                     </Popover>

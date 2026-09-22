@@ -4,9 +4,11 @@ import { MockGatewayProvider } from '../providers/MockGatewayProvider';
 import { NotificationService } from './NotificationService';
 import { AppError } from '../utils/AppError';
 import { PackageRepository } from '../repositories/PackageRepository';
+import { AuditLogService } from './AuditLogService';
 
 const notificationService = new NotificationService();
 const packageRepo = new PackageRepository();
+const auditService = new AuditLogService();
 const provider: IPaymentProvider = new MockGatewayProvider();
 
 export class WebhookService {
@@ -89,6 +91,28 @@ export class WebhookService {
     } catch (error: any) {
       console.error('Webhook transaction failed:', error);
       throw new AppError('Failed to process webhook', 'INTERNAL_SERVER_ERROR', 500);
+    }
+
+    // Outside the transaction, log the audit event if SUCCESS
+    if (status === 'SUCCESS') {
+      try {
+        const paymentRef = db.collection('payments').doc(paymentId);
+        const paymentDoc = await paymentRef.get();
+        if (paymentDoc.exists) {
+          const paymentData = paymentDoc.data() as any;
+          await auditService.logAction(
+            paymentData.tenantId,
+            'SYSTEM_WEBHOOK',
+            'SUBSCRIPTION_ACTIVATED',
+            'BILLING',
+            paymentId,
+            { status: 'PENDING' },
+            { status: 'SUCCESS', providerTransactionId }
+          );
+        }
+      } catch (e) {
+        console.error('Failed to write audit log in webhook', e);
+      }
     }
   }
 }

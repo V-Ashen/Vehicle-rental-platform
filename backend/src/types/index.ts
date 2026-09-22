@@ -96,6 +96,41 @@ export interface Payment extends BaseEntity {
   paidAt: Date | null;
 }
 
+export interface AuditLog {
+  id: string;
+  tenantId: string;
+  userId: string;
+  action: string;
+  module: string;
+  entityId: string;
+  oldData?: any;
+  newData?: any;
+  timestamp: Date;
+}
+
+export interface Role {
+  id: string;
+  tenantId: string;
+  name: string;
+  permissions: string[]; // e.g. ['rentals.create', 'vehicles.view']
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+}
+
+export interface Staff {
+  id: string;
+  tenantId: string;
+  firebaseUid: string;
+  email: string;
+  fullName: string;
+  roleId: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+}
+
 export interface Customer extends BaseEntity {
   tenantId: string;
   fullName: string;

@@ -55,11 +55,16 @@ export const requireOwner = async (req: Request, res: Response, next: NextFuncti
     const userRepo = new UserRepository();
     const user = await userRepo.findByFirebaseUid(firebaseUid);
 
-    if (!user || user.userType !== 'OWNER') {
-      return next(new AppError('Forbidden: Owner access required', 'FORBIDDEN', 403));
+    if (!user || (user.userType !== 'OWNER' && user.userType !== 'STAFF')) {
+      return next(new AppError('Forbidden: Owner or Staff access required', 'FORBIDDEN', 403));
     }
 
-    (req as any).ownerUser = user;
+    if (user.userType === 'STAFF') {
+      (req as any).staffUser = user;
+      // In a full RBAC system, you would check req.requiredPermission against user's role here
+    } else {
+      (req as any).ownerUser = user;
+    }
     next();
   } catch (error) {
     next(new AppError('Authorization failed', 'INTERNAL_SERVER_ERROR', 500));

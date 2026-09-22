@@ -58,24 +58,20 @@ export default function Step1ReturnDetails({ rentalData }: Step1ReturnDetailsPro
             <FormItem className="flex flex-col">
               <FormLabel>Return Date</FormLabel>
               <Popover>
-                <PopoverTrigger asChild>
+                <PopoverTrigger render={
                   <FormControl>
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-full pl-3 text-left font-normal bg-white dark:bg-slate-950",
+                        "w-full pl-3 text-left font-normal",
                         !field.value && "text-muted-foreground"
                       )}
                     >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
+                      {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                     </Button>
                   </FormControl>
-                </PopoverTrigger>
+                } />
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"

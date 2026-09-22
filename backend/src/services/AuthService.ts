@@ -175,6 +175,15 @@ export class AuthService {
       throw new AppError('Trial expired', 'PAYMENT_REQUIRED', 402);
     }
 
+    // Fetch Role Permissions
+    let permissions: string[] = [];
+    if (user.roleId) {
+      const role = await roleRepo.findById(user.roleId);
+      if (role && role.permissions) {
+        permissions = role.permissions;
+      }
+    }
+
     return {
       user: {
         id: user.id,
@@ -182,7 +191,8 @@ export class AuthService {
         email: user.email,
         roleId: user.roleId,
         userType: user.userType,
-        tenantId: user.tenantId
+        tenantId: user.tenantId,
+        permissions
       },
       tenant: {
         id: tenant.id,
