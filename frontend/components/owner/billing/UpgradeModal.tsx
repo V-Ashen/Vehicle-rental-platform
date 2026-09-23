@@ -42,10 +42,10 @@ export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
   const onlinePaymentMutation = useMutation({
     mutationFn: async (packageId: string) => {
       const res = await apiClient.post("/payments/checkout", { packageId });
-      return res.data;
+      return res.data.data;
     },
     onSuccess: (data) => {
-      if (data.checkoutUrl) {
+      if (data?.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       }
     },

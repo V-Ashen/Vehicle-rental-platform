@@ -96,6 +96,9 @@ export class TenantPaymentService {
       providerTransactionId: null,
       status: 'PENDING',
       paidAt: null,
+      metadata: {
+        packageId: pkg.id
+      },
       createdAt: new Date(),
       updatedAt: new Date(),
       createdBy: userId,

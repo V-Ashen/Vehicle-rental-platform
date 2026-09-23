@@ -37,10 +37,10 @@ export default function AdminDashboard() {
   }
 
   const statCards = [
-    { title: 'Total Businesses', value: metrics?.totalTenants || 0, color: 'bg-blue-50 text-blue-700 border-blue-200' },
-    { title: 'Active Subscriptions', value: metrics?.activeTenants || 0, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-    { title: 'Trial Businesses', value: metrics?.trialTenants || 0, color: 'bg-amber-50 text-amber-700 border-amber-200' },
-    { title: 'Suspended Accounts', value: metrics?.suspendedTenants || 0, color: 'bg-red-50 text-red-700 border-red-200' },
+    { title: 'Total Businesses', value: metrics?.totalBusinesses || 0, color: 'bg-blue-50 text-blue-700 border-blue-200' },
+    { title: 'Active Subscriptions', value: metrics?.totalActiveSubscriptions || 0, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    { title: 'Trial Businesses', value: metrics?.trialBusinesses || 0, color: 'bg-amber-50 text-amber-700 border-amber-200' },
+    { title: 'Suspended Accounts', value: metrics?.suspendedBusinesses || 0, color: 'bg-red-50 text-red-700 border-red-200' },
   ];
 
   return (

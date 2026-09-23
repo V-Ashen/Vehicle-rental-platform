@@ -52,10 +52,17 @@ export class OwnerBillingController {
       const paymentRequests = await paymentRequestRepo.findByQuery('tenantId', '==', tenantId);
       
       // Sort them combined by date descending
+      const getTime = (dateObj: any) => {
+        if (!dateObj) return 0;
+        if (typeof dateObj.toDate === 'function') return dateObj.toDate().getTime();
+        if (typeof dateObj.getTime === 'function') return dateObj.getTime();
+        return new Date(dateObj).getTime();
+      };
+
       const combined = [
         ...payments.map((p: any) => ({ ...p, type: 'PAYMENT', date: p.createdAt })),
         ...paymentRequests.map((pr: any) => ({ ...pr, type: 'PAYMENT_REQUEST', date: pr.submittedAt }))
-      ].sort((a, b) => b.date.getTime() - a.date.getTime());
+      ].sort((a, b) => getTime(b.date) - getTime(a.date));
 
       res.status(200).json({ success: true, data: combined });
     } catch (error) {

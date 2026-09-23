@@ -100,6 +100,7 @@ export interface Payment extends BaseEntity {
   providerTransactionId: string | null;
   status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
   paidAt: Date | null;
+  metadata?: Record<string, any>;
 }
 
 export interface AuditLog {
