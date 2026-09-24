@@ -39,4 +39,12 @@ export class RentalController {
     const result = await rentalService.returnRental(id as string, tenantId, req.body, userId);
     res.status(200).json({ success: true, data: result });
   }
+
+  async cancelRental(req: Request, res: Response) {
+    const tenantId = (req as any).tenant.id;
+    const userId = (req as any).ownerUser?.id || (req as any).staffUser?.id;
+    const { id } = req.params;
+    const result = await rentalService.cancelRental(id as string, tenantId, userId);
+    res.status(200).json({ success: true, data: result });
+  }
 }

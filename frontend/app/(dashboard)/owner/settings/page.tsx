@@ -5,6 +5,7 @@ import { Settings as SettingsIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GeneralSettingsForm from "@/components/owner/settings/GeneralSettingsForm";
 import RentalRulesForm from "@/components/owner/settings/RentalRulesForm";
+import BranchSettingsTab from "@/components/owner/settings/BranchSettingsTab";
 
 export default function SettingsPage() {
   return (
@@ -16,7 +17,7 @@ export default function SettingsPage() {
             Business Settings
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Manage your company profile and operational rules.
+            Manage your company profile, operational rules, and branches.
           </p>
         </div>
       </div>
@@ -29,6 +30,9 @@ export default function SettingsPage() {
           <TabsTrigger value="rental-rules" className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-500/20 dark:data-[state=active]:text-indigo-400">
             Rental Rules
           </TabsTrigger>
+          <TabsTrigger value="branches" className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-500/20 dark:data-[state=active]:text-indigo-400">
+            Branches
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="mt-6">
@@ -37,6 +41,10 @@ export default function SettingsPage() {
 
         <TabsContent value="rental-rules" className="mt-6">
           <RentalRulesForm />
+        </TabsContent>
+
+        <TabsContent value="branches" className="mt-6">
+          <BranchSettingsTab />
         </TabsContent>
       </Tabs>
     </div>

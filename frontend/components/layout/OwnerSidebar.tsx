@@ -39,6 +39,7 @@ export function OwnerSidebar() {
     { name: 'Customers', href: '/owner/customers', icon: Users, requiredPermission: 'customers.view' },
     { name: 'Maintenance', href: '/owner/maintenance', icon: Wrench, requiredPermission: 'vehicles.manage' },
     { name: 'Reports', href: '/owner/reports', icon: FileText, requiredPermission: 'reports.view' },
+    { name: 'Customer Payments', href: '/owner/payments', icon: CreditCard, requiredPermission: 'billing.manage' },
     { name: 'Users & Roles', href: '/owner/users', icon: Shield, requiredPermission: 'users.manage' },
     { name: 'Settings', href: '/owner/settings', icon: Settings, requiredPermission: 'settings.manage' },
     { name: 'Billing', href: '/owner/billing', icon: CreditCard, requiredPermission: 'billing.manage' },

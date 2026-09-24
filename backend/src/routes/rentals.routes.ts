@@ -15,5 +15,6 @@ router.get('/:id', controller.getById);
 router.post('/', validate(createRentalSchema), controller.create);
 router.post('/:id/handover', validate(handoverSchema), controller.handover);
 router.post('/:id/return', validate(returnRentalSchema), controller.returnRental);
+router.post('/:id/cancel', controller.cancelRental);
 
 export default router;

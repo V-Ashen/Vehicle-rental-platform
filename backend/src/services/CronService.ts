@@ -71,7 +71,7 @@ export class CronService {
         const htmlContent = template.html;
 
         const { error } = await resend.emails.send({
-          from: 'noreply@booking.pixzoralabs.com',
+          from: process.env.EMAIL_FROM || 'noreply@booking.pixzoralabs.com',
           to: recipientEmail,
           subject: emailSubject,
           html: htmlContent

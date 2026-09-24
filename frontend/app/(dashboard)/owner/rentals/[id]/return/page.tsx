@@ -236,8 +236,9 @@ export default function ReturnRentalWizardPage({ params }: { params: Promise<{ i
                 Previous
               </Button>
 
-              {currentStep < 3 ? (
+              {currentStep < 3 && (
                 <Button 
+                  key="continue-btn"
                   type="button" 
                   onClick={nextStep} 
                   className="bg-indigo-600 hover:bg-indigo-700"
@@ -245,8 +246,11 @@ export default function ReturnRentalWizardPage({ params }: { params: Promise<{ i
                   Continue
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
-              ) : (
+              )}
+              
+              {currentStep === 3 && (
                 <Button 
+                  key="submit-btn"
                   type="submit" 
                   disabled={processReturnMutation.isPending || !isValid}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"

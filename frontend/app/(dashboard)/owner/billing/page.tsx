@@ -129,7 +129,7 @@ export default function BillingDashboardPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
                     <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Vehicle Limit</p>
                     <p className="text-xl font-bold text-slate-900 dark:text-white">
@@ -140,6 +140,12 @@ export default function BillingDashboardPage() {
                     <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Staff Limit</p>
                     <p className="text-xl font-bold text-slate-900 dark:text-white">
                       {subscriptionData.package?.maxUsers || 0} <span className="text-sm font-normal text-slate-500">max users</span>
+                    </p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Branch Limit</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white">
+                      {subscriptionData.package?.maxBranches || 1} <span className="text-sm font-normal text-slate-500">max branches</span>
                     </p>
                   </div>
                 </div>

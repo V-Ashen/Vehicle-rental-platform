@@ -217,6 +217,45 @@ export class RentalService {
     }
   }
 
+  async cancelRental(rentalId: string, tenantId: string, userId: string) {
+    const rentalRef = db.collection('rentals').doc(rentalId);
+    
+    try {
+      await db.runTransaction(async (t) => {
+        const rentalDoc = await t.get(rentalRef);
+        if (!rentalDoc.exists) throw new AppError('Rental not found', 'NOT_FOUND', 404);
+        
+        const rental = rentalDoc.data();
+        if (rental?.tenantId !== tenantId) throw new AppError('Rental not found', 'NOT_FOUND', 404);
+        
+        if (rental?.status !== 'RESERVED') {
+          throw new AppError('Only RESERVED rentals can be cancelled', 'INVALID_STATE', 400);
+        }
+
+        const vehicleRef = db.collection('vehicles').doc(rental.vehicleId);
+        
+        // Update vehicle status back to AVAILABLE
+        t.update(vehicleRef, {
+          status: 'AVAILABLE',
+          updatedAt: new Date(),
+          updatedBy: userId
+        });
+
+        // Update rental status to CANCELLED
+        t.update(rentalRef, {
+          status: 'CANCELLED',
+          updatedAt: new Date(),
+          updatedBy: userId
+        });
+      });
+      
+      return { id: rentalId, status: 'CANCELLED' };
+    } catch (e: any) {
+      if (e instanceof AppError) throw e;
+      throw new AppError(`Cancel rental transaction failed: ${e.message}`, 'INTERNAL_SERVER_ERROR', 500);
+    }
+  }
+
   async handover(rentalId: string, tenantId: string, data: any, userId: string) {
     const { odometer, fuelLevel, conditionStatus, photoUrls, notes } = data;
 

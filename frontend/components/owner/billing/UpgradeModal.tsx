@@ -194,6 +194,7 @@ export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
                       <ul className="mt-6 space-y-3 text-sm text-slate-600 dark:text-slate-400">
                         <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2 shrink-0" /> Up to {pkg.maxVehicles} Vehicles</li>
                         <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2 shrink-0" /> {pkg.maxUsers} Staff Accounts</li>
+                        <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2 shrink-0" /> Up to {pkg.maxBranches || 1} Branches</li>
                         {Object.entries(pkg.features || {}).map(([key, val]) => (
                           <li key={key} className="flex items-center">
                             <Check className="w-4 h-4 text-emerald-500 mr-2 shrink-0" /> 

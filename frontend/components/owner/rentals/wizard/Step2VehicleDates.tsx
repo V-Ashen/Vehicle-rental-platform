@@ -101,6 +101,7 @@ export default function Step2VehicleDates() {
                       <PopoverTrigger render={
                         <FormControl>
                           <Button
+                            type="button"
                             variant={"outline"}
                             className={cn(
                               "w-full pl-3 text-left font-normal h-10",
@@ -163,6 +164,7 @@ export default function Step2VehicleDates() {
                       <PopoverTrigger render={
                         <FormControl>
                           <Button
+                            type="button"
                             variant={"outline"}
                             className={cn(
                               "w-full pl-3 text-left font-normal h-10",
