@@ -227,9 +227,14 @@ export default function RentalsPage() {
                             size="sm"
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                             onClick={() => {
-                              if (confirm("Are you sure you want to cancel this reservation?")) {
-                                cancelRentalMutation.mutate(rental.id);
-                              }
+                              toast({
+                                title: "Confirm Cancellation",
+                                description: "Are you sure you want to cancel this reservation?",
+                                action: {
+                                  label: "Cancel Rental",
+                                  onClick: () => cancelRentalMutation.mutate(rental.id)
+                                }
+                              });
                             }}
                             disabled={cancelRentalMutation.isPending}
                           >

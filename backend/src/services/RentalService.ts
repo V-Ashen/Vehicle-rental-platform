@@ -119,6 +119,39 @@ export class RentalService {
       throw new AppError('Return date must be after pickup date', 'VALIDATION_ERROR', 400);
     }
 
+    // Subscription Check for maxMonthlyRentals Limit
+    const subsSnapshot = await db.collection('subscriptions').where('tenantId', '==', tenantId).get();
+    const activeSub = subsSnapshot.docs.map(doc => doc.data()).find(s => s.status === 'ACTIVE' || s.status === 'TRIAL');
+    
+    if (!activeSub) {
+      throw new AppError('No active subscription found for tenant', 'FORBIDDEN', 403);
+    }
+
+    const packageDoc = await db.collection('packages').doc(activeSub.packageId).get();
+    const packageData = packageDoc.data();
+    
+    if (!packageData) {
+      throw new AppError('Subscription package not found', 'INTERNAL_SERVER_ERROR', 500);
+    }
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const monthlyRentalsSnapshot = await db.collection('rentals')
+      .where('tenantId', '==', tenantId)
+      .where('createdAt', '>=', startOfMonth)
+      .where('createdAt', '<=', endOfMonth)
+      .count()
+      .get();
+      
+    const currentMonthlyRentals = monthlyRentalsSnapshot.data().count;
+
+    // Check if the package allows unlimited (-1 or something) or enforce it
+    if (packageData.maxMonthlyRentals !== -1 && currentMonthlyRentals >= packageData.maxMonthlyRentals) {
+      throw new AppError(`Upgrade required. Your current plan allows a maximum of ${packageData.maxMonthlyRentals} rentals per month.`, 'PAYMENT_REQUIRED', 402);
+    }
+
     const diffHours = Math.abs(returnDate.getTime() - pickupDate.getTime()) / 36e5;
     const rentalDays = Math.ceil(diffHours / 24) || 1; // Minimum 1 day
 
@@ -165,6 +198,7 @@ export class RentalService {
           damageCharges: 0,
           otherCharges: 0,
           totalAmount: baseRentalAmount,
+          balanceDue: baseRentalAmount,
           status: 'RESERVED',
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -380,7 +414,13 @@ export class RentalService {
         // D. Final Settlement
         const finalTotal = rental.baseRentalAmount + extraKmCharge + lateCharge + damageTotal + extraOtherCharges;
 
-        // E. Deposit Deductions
+        // E. Deposit Deductions & Balance Calculation
+        const previousTotal = rental.totalAmount || 0;
+        const previousBalance = rental.balanceDue ?? previousTotal;
+        const previouslyPaid = previousTotal - previousBalance;
+        
+        let amountToDeduct = 0;
+
         const depositQuery = db.collection('deposits')
           .where('rentalId', '==', rentalId)
           .where('status', '==', 'HELD')
@@ -391,7 +431,6 @@ export class RentalService {
           const depositDoc = depositSnapshot.docs[0];
           const depositData = depositDoc.data();
           
-          let amountToDeduct = 0;
           const excessCharges = extraKmCharge + lateCharge + damageTotal + extraOtherCharges;
           
           if (excessCharges > 0) {
@@ -412,6 +451,8 @@ export class RentalService {
             updatedBy: userId
           });
         }
+
+        const finalBalanceDue = Math.max(0, finalTotal - previouslyPaid - amountToDeduct);
 
         // --- DATABASE UPDATES ---
         
@@ -501,6 +542,7 @@ export class RentalService {
           damageCharges: damageTotal,
           otherCharges: extraOtherCharges,
           totalAmount: finalTotal,
+          balanceDue: finalBalanceDue,
           updatedAt: new Date(),
           updatedBy: userId
         });

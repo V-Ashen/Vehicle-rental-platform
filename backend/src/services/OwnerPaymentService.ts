@@ -24,38 +24,64 @@ export class OwnerPaymentService {
     
     // Verify customer exists
     const customerRef = db.collection('customers').doc(data.customerId);
-    const customerDoc = await customerRef.get();
-    
-    if (!customerDoc.exists || customerDoc.data()?.tenantId !== tenantId) {
-      throw new AppError('Customer not found', 'NOT_FOUND', 404);
-    }
-    
     const now = new Date();
-    
-    const paymentData = {
-      id: paymentId,
-      tenantId,
-      paymentType: data.paymentType,
-      referenceId: data.rentalId || data.customerId, // Map to rental if provided, else customer
-      amount: data.amount,
-      currency: 'LKR', // Hardcoded for MVP, should be dynamic in V2
-      method: data.method,
-      provider: 'MANUAL',
-      providerTransactionId: null,
-      status: 'SUCCESS', // Manual recordings are automatically SUCCESS
-      paidAt: now,
-      metadata: {
-        customerId: data.customerId,
-        rentalId: data.rentalId || null,
-        notes: data.notes || null,
-      },
-      createdAt: now,
-      updatedAt: now,
-      createdBy: userId,
-      updatedBy: userId
-    };
+    let createdPayment: any = null;
 
-    await paymentRef.set(paymentData);
+    try {
+      await db.runTransaction(async (t) => {
+        const customerDoc = await t.get(customerRef);
+        
+        if (!customerDoc.exists || customerDoc.data()?.tenantId !== tenantId) {
+          throw new AppError('Customer not found', 'NOT_FOUND', 404);
+        }
+        
+        const paymentData = {
+          id: paymentId,
+          tenantId,
+          paymentType: data.paymentType,
+          referenceId: data.rentalId || data.customerId,
+          amount: data.amount,
+          currency: 'LKR',
+          method: data.method,
+          provider: 'MANUAL',
+          providerTransactionId: null,
+          status: 'SUCCESS',
+          paidAt: now,
+          metadata: {
+            customerId: data.customerId,
+            rentalId: data.rentalId || null,
+            notes: data.notes || null,
+          },
+          createdAt: now,
+          updatedAt: now,
+          createdBy: userId,
+          updatedBy: userId
+        };
+
+        if (data.rentalId && (data.paymentType === 'RENTAL' || data.paymentType === 'ADVANCE' || data.paymentType === 'DAMAGE' || data.paymentType === 'OTHER')) {
+          const rentalRef = db.collection('rentals').doc(data.rentalId);
+          const rentalDoc = await t.get(rentalRef);
+          
+          if (rentalDoc.exists && rentalDoc.data()?.tenantId === tenantId) {
+            const rental = rentalDoc.data();
+            const currentBalance = rental.balanceDue ?? rental.totalAmount ?? 0;
+            const newBalance = Math.max(0, currentBalance - data.amount);
+            
+            t.update(rentalRef, {
+              balanceDue: newBalance,
+              updatedAt: now,
+              updatedBy: userId
+            });
+          }
+        }
+
+        t.set(paymentRef, paymentData);
+        createdPayment = paymentData;
+      });
+    } catch (e: any) {
+      if (e instanceof AppError) throw e;
+      throw new AppError(`Payment transaction failed: ${e.message}`, 'INTERNAL_SERVER_ERROR', 500);
+    }
 
     await auditService.logAction(
       tenantId,
@@ -64,10 +90,10 @@ export class OwnerPaymentService {
       'BILLING',
       paymentId,
       undefined,
-      paymentData
+      createdPayment
     );
 
-    return paymentData;
+    return createdPayment;
   }
 
   async listPayments(tenantId: string, limit: number = 20, cursor?: string) {

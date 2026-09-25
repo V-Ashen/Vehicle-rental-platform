@@ -71,9 +71,14 @@ export default function StaffTab() {
   });
 
   const handleRevoke = (staffId: string) => {
-    if (confirm("Are you sure you want to completely revoke access for this staff member? This cannot be undone.")) {
-      deleteMutation.mutate(staffId);
-    }
+    toast({
+      title: "Revoke Access",
+      description: "Are you sure you want to completely revoke access for this staff member? This cannot be undone.",
+      action: {
+        label: "Revoke",
+        onClick: () => deleteMutation.mutate(staffId)
+      }
+    });
   };
 
   return (

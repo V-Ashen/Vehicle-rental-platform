@@ -201,4 +201,111 @@ export class CronService {
 
     return { remindersSent, expiredCount, message: `Processed subscriptions successfully` };
   }
+
+  async processDailyRentals() {
+    const now = new Date();
+    const rentalsRef = db.collection('rentals');
+    const batch = db.batch();
+    let overdueCount = 0;
+    let upcomingCount = 0;
+
+    // Action 1: Overdue
+    const overdueQuery = await rentalsRef
+      .where('status', '==', 'ON_RENT')
+      .where('expectedReturnAt', '<', now)
+      .get();
+
+    for (const doc of overdueQuery.docs) {
+      const rental = doc.data();
+      if (!rental.isOverdue) {
+        batch.update(doc.ref, {
+          isOverdue: true,
+          updatedAt: new Date(),
+          updatedBy: 'SYSTEM_CRON'
+        });
+
+        // Notify Customer
+        const notifId = generateId(IdPrefix.NOTIFICATION);
+        const notifRef = db.collection('notifications').doc(notifId);
+        batch.set(notifRef, {
+          id: notifId,
+          tenantId: rental.tenantId,
+          userId: rental.customerId,
+          type: 'OVERDUE_ALERT',
+          channel: 'EMAIL',
+          subject: 'Rental Overdue Notice',
+          message: `Your rental is overdue! Please return the vehicle immediately to avoid additional late charges.`,
+          status: 'QUEUED',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: 'SYSTEM_CRON',
+          updatedBy: 'SYSTEM_CRON'
+        });
+
+        // Notify Owner
+        const ownerNotifId = generateId(IdPrefix.NOTIFICATION);
+        const ownerNotifRef = db.collection('notifications').doc(ownerNotifId);
+        batch.set(ownerNotifRef, {
+          id: ownerNotifId,
+          tenantId: rental.tenantId,
+          userId: 'TENANT_ADMIN',
+          type: 'OVERDUE_ALERT',
+          channel: 'EMAIL',
+          subject: 'Vehicle Overdue Alert',
+          message: `Vehicle for rental ${rental.id} is overdue by customer.`,
+          status: 'QUEUED',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: 'SYSTEM_CRON',
+          updatedBy: 'SYSTEM_CRON'
+        });
+        
+        overdueCount++;
+      }
+    }
+
+    // Action 2: Upcoming Pickup (within 24 hours)
+    const plus24 = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const upcomingQuery = await rentalsRef
+      .where('status', '==', 'RESERVED')
+      .where('pickupAt', '>', now)
+      .where('pickupAt', '<=', plus24)
+      .get();
+
+    for (const doc of upcomingQuery.docs) {
+      const rental = doc.data();
+      if (!rental.upcomingNotified) {
+        batch.update(doc.ref, {
+          upcomingNotified: true,
+          updatedAt: new Date(),
+          updatedBy: 'SYSTEM_CRON'
+        });
+
+        const notifId = generateId(IdPrefix.NOTIFICATION);
+        const notifRef = db.collection('notifications').doc(notifId);
+        batch.set(notifRef, {
+          id: notifId,
+          tenantId: rental.tenantId,
+          userId: rental.customerId,
+          type: 'UPCOMING_PICKUP',
+          channel: 'EMAIL',
+          subject: 'Upcoming Vehicle Pickup',
+          message: `Your vehicle rental is scheduled for pickup within 24 hours!`,
+          status: 'QUEUED',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: 'SYSTEM_CRON',
+          updatedBy: 'SYSTEM_CRON'
+        });
+
+        upcomingCount++;
+      }
+    }
+
+    if (overdueCount > 0 || upcomingCount > 0) {
+      await batch.commit();
+    }
+
+    return { overdueCount, upcomingCount, message: 'Processed daily rentals successfully' };
+  }
 }

@@ -46,15 +46,23 @@ export default function BranchSettingsTab() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this branch?')) return;
-    try {
-      await apiClient.delete(`/owner/branches/${id}`);
-      toast({ title: 'Success', description: 'Branch deleted successfully' });
-      fetchBranches();
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to delete branch', variant: 'destructive' });
-    }
+  const handleDelete = (id: string) => {
+    toast({
+      title: "Delete Branch",
+      description: "Are you sure you want to delete this branch?",
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          try {
+            await apiClient.delete(`/owner/branches/${id}`);
+            toast({ title: 'Success', description: 'Branch deleted successfully' });
+            fetchBranches();
+          } catch (err: any) {
+            toast({ title: 'Error', description: err.response?.data?.message || 'Failed to delete branch', variant: 'destructive' });
+          }
+        }
+      }
+    });
   };
 
   return (

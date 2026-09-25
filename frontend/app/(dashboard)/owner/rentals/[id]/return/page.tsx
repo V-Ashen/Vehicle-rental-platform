@@ -204,13 +204,9 @@ export default function ReturnRentalWizardPage({ params }: { params: Promise<{ i
 
         <FormProvider {...methods}>
           <form 
-            onSubmit={handleSubmit(onSubmit)} 
             className="space-y-8"
             onKeyDown={(e) => {
-              // Prevent Enter key from auto-submitting the form, unless it's on a textarea or button
-              if (e.key === 'Enter' && e.target instanceof HTMLElement && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') {
-                e.preventDefault();
-              }
+              if (e.key === 'Enter') e.preventDefault();
             }}
           >
             
@@ -251,7 +247,8 @@ export default function ReturnRentalWizardPage({ params }: { params: Promise<{ i
               {currentStep === 3 && (
                 <Button 
                   key="submit-btn"
-                  type="submit" 
+                  type="button" 
+                  onClick={handleSubmit(onSubmit)}
                   disabled={processReturnMutation.isPending || !isValid}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
