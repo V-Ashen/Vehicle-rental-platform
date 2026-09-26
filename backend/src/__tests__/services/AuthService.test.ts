@@ -89,7 +89,7 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('user');
       expect(result).toHaveProperty('tenant');
       expect(result).toHaveProperty('subscription');
-      expect(result.subscription.status).toBe('ACTIVE');
+      expect(result.subscription?.status).toBe('ACTIVE');
     });
 
     it('should throw error if user account is disabled', async () => {

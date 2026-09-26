@@ -38,7 +38,7 @@ export default function Step2DamageCheck() {
       const newUrls: string[] = [...currentUrls];
       
       for (const file of files) {
-        const res = await apiClient.post("/upload/generate-signed-url", {
+        const res = await apiClient.post("/owner/upload/generate-signed-url", {
           fileName: file.name,
           contentType: file.type,
           fileCategory: "damage"

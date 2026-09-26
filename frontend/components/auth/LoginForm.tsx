@@ -1,17 +1,26 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { apiClient } from '@/lib/api';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { useAuth } from '@/hooks/useAuth';
 
 export function LoginForm() {
   const router = useRouter();
+  const { user, dbUser, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && user && dbUser) {
+      if (dbUser.userType === 'SAAS_ADMIN') router.push('/admin/dashboard');
+      else router.push('/owner/dashboard');
+    }
+  }, [user, dbUser, authLoading, router]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +78,12 @@ export function LoginForm() {
       </div>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+        <div className="flex justify-between items-center">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+          <a href="/forgot-password" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+            Forgot password?
+          </a>
+        </div>
         <input 
           type="password" 
           value={password}

@@ -17,6 +17,7 @@ import { Plus, Search, Car, Image as ImageIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { RequirePermission } from "@/components/auth/RequirePermission";
 
 export default function VehiclesPage() {
   const router = useRouter();
@@ -67,12 +68,14 @@ export default function VehiclesPage() {
             Manage your vehicles, pricing rules, and statuses.
           </p>
         </div>
-        <Link href="/owner/vehicles/new">
-          <Button className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Vehicle
-          </Button>
-        </Link>
+        <RequirePermission permission="vehicles.create">
+          <Link href="/owner/vehicles/new">
+            <Button className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Vehicle
+            </Button>
+          </Link>
+        </RequirePermission>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">

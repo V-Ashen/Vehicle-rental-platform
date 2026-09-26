@@ -41,6 +41,7 @@ const packageSchema = z.object({
   trialDays: z.coerce.number().min(0, "Trial days must be positive"),
   maxVehicles: z.coerce.number(),
   maxUsers: z.coerce.number(),
+  maxBranches: z.coerce.number(),
   status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]),
 });
 
@@ -66,6 +67,7 @@ export function PackageFormModal({ isOpen, setIsOpen, initialData }: PackageForm
       trialDays: 14,
       maxVehicles: -1,
       maxUsers: -1,
+      maxBranches: 1,
       status: "DRAFT",
     },
   });
@@ -82,6 +84,7 @@ export function PackageFormModal({ isOpen, setIsOpen, initialData }: PackageForm
         trialDays: 14,
         maxVehicles: -1,
         maxUsers: -1,
+        maxBranches: 1,
         status: "DRAFT",
       });
     }
@@ -222,7 +225,7 @@ export function PackageFormModal({ isOpen, setIsOpen, initialData }: PackageForm
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="maxVehicles"
@@ -242,6 +245,19 @@ export function PackageFormModal({ isOpen, setIsOpen, initialData }: PackageForm
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Max Users (-1 for unlimited)</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="maxBranches"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Max Branches (-1 for unlimited)</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} />
                     </FormControl>

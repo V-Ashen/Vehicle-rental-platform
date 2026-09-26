@@ -2,8 +2,8 @@ import { IPaymentProvider, PaymentIntentData, WebhookResult } from './IPaymentPr
 
 export class MockGatewayProvider implements IPaymentProvider {
   async generateCheckoutUrl(data: PaymentIntentData): Promise<string> {
-    // In a real provider like PayHere, this would make an API call to generate a hosted checkout URL
-    return `https://mock-gateway.com/checkout?order_id=${data.orderId}&amount=${data.amount}&currency=${data.currency}`;
+    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    return `${baseUrl}/mock-gateway/checkout?order_id=${data.orderId}&amount=${data.amount}&currency=${data.currency}`;
   }
 
   verifySignature(payload: any, signature: string): boolean {

@@ -18,9 +18,14 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
+import { RequirePermission } from "@/components/auth/RequirePermission";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 
 export default function RentalsPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: responseData, isLoading } = useQuery({
@@ -38,6 +43,27 @@ export default function RentalsPage() {
     rental.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     rental.vehicleRegistration?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const cancelRentalMutation = useMutation({
+    mutationFn: async (rentalId: string) => {
+      await apiClient.post(`/rentals/${rentalId}/cancel`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["owner-rentals"] });
+      queryClient.invalidateQueries({ queryKey: ["owner-vehicles"] });
+      toast({
+        title: "Rental Cancelled",
+        description: "The reservation has been cancelled and the vehicle is now available.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Action Failed",
+        description: error.response?.data?.message || "Failed to cancel the rental.",
+        variant: "destructive"
+      });
+    }
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -66,12 +92,22 @@ export default function RentalsPage() {
             Manage reservations and active rentals.
           </p>
         </div>
-        <Link href="/owner/rentals/new">
-          <Button className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">
-            <Plus className="w-4 h-4 mr-2" />
-            New Rental
-          </Button>
-        </Link>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Link href="/owner/rentals/calendar">
+            <Button variant="outline" className="w-full sm:w-auto border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">
+              <CalendarClock className="w-4 h-4 mr-2" />
+              View Calendar
+            </Button>
+          </Link>
+          <RequirePermission permission="rentals.create">
+            <Link href="/owner/rentals/new">
+              <Button className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">
+                <Plus className="w-4 h-4 mr-2" />
+                New Rental
+              </Button>
+            </Link>
+          </RequirePermission>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
@@ -160,14 +196,51 @@ export default function RentalsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       {rental.status === 'ON_RENT' ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100"
-                          onClick={() => router.push(`/owner/rentals/${rental.id}/return`)}
+                        <RequirePermission 
+                          permission="rentals.process_return"
+                          fallback={
+                            <Button variant="ghost" size="sm" onClick={() => router.push(`/owner/rentals/${rental.id}`)}>
+                              View Details
+                            </Button>
+                          }
                         >
-                          Process Return
-                        </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100"
+                            onClick={() => router.push(`/owner/rentals/${rental.id}/return`)}
+                          >
+                            Process Return
+                          </Button>
+                        </RequirePermission>
+                      ) : rental.status === 'RESERVED' ? (
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => router.push(`/owner/rentals/${rental.id}`)}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                            onClick={() => {
+                              toast({
+                                title: "Confirm Cancellation",
+                                description: "Are you sure you want to cancel this reservation?",
+                                action: {
+                                  label: "Cancel Rental",
+                                  onClick: () => cancelRentalMutation.mutate(rental.id)
+                                }
+                              });
+                            }}
+                            disabled={cancelRentalMutation.isPending}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
                       ) : (
                         <Button
                           variant="ghost"

@@ -126,6 +126,49 @@ export default function NewRentalWizardPage() {
     }
   });
 
+  const reserveOnlyMutation = useMutation({
+    mutationFn: async (data: RentalWizardFormValues) => {
+      const rentalRes = await apiClient.post("/rentals", {
+        customerId: data.customerId,
+        vehicleId: data.vehicleId,
+        pickupAt: data.pickupAt.toISOString(),
+        expectedReturnAt: data.expectedReturnAt.toISOString()
+      });
+      return rentalRes.data.data.id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["owner-rentals"] });
+      queryClient.invalidateQueries({ queryKey: ["owner-vehicles"] });
+      queryClient.invalidateQueries({ queryKey: ["owner-dashboard"] });
+      
+      toast({
+        title: "Reservation Created!",
+        description: "The vehicle has been reserved successfully. Status is now RESERVED.",
+      });
+      router.push("/owner/rentals");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Reservation Failed",
+        description: error.response?.data?.message || "An unexpected error occurred.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleReserveOnly = async () => {
+    const isStepValid = await trigger(["customerId", "vehicleId", "pickupAt", "expectedReturnAt"]);
+    if (isStepValid) {
+      reserveOnlyMutation.mutate(methods.getValues());
+    } else {
+      toast({
+        title: "Validation Error",
+        description: "Please complete all required fields correctly before proceeding.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const onSubmit = (data: RentalWizardFormValues) => {
     createRentalMutation.mutate(data);
   };
@@ -153,13 +196,9 @@ export default function NewRentalWizardPage() {
 
         <FormProvider {...methods}>
           <form 
-            onSubmit={handleSubmit(onSubmit)} 
             className="space-y-8"
             onKeyDown={(e) => {
-              // Prevent Enter key from auto-submitting the form, unless it's on a textarea or button
-              if (e.key === 'Enter' && e.target instanceof HTMLElement && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') {
-                e.preventDefault();
-              }
+              if (e.key === 'Enter') e.preventDefault();
             }}
           >
             
@@ -180,24 +219,43 @@ export default function NewRentalWizardPage() {
                 type="button"
                 variant="outline"
                 onClick={prevStep}
-                disabled={currentStep === 1 || createRentalMutation.isPending}
+                disabled={currentStep === 1 || createRentalMutation.isPending || reserveOnlyMutation.isPending}
               >
                 Previous
               </Button>
 
-              {currentStep < 3 ? (
-                <Button 
-                  type="button" 
-                  onClick={nextStep} 
-                  className="bg-indigo-600 hover:bg-indigo-700"
-                >
-                  Continue
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              ) : (
-                <Button 
-                  type="submit" 
-                  disabled={createRentalMutation.isPending || !isValid}
+              <div className="flex items-center gap-3">
+                {currentStep === 2 && (
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                    onClick={handleReserveOnly}
+                    disabled={reserveOnlyMutation.isPending}
+                  >
+                    {reserveOnlyMutation.isPending ? "Processing..." : "Reserve Only (Skip Handover)"}
+                  </Button>
+                )}
+
+                {currentStep < 3 && (
+                  <Button 
+                    key="continue-btn"
+                    type="button" 
+                    onClick={nextStep} 
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                    disabled={reserveOnlyMutation.isPending}
+                  >
+                    {currentStep === 2 ? "Continue to Handover" : "Continue"}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                )}
+                
+                {currentStep === 3 && (
+                  <Button 
+                    key="submit-btn"
+                    type="button" 
+                    onClick={handleSubmit(onSubmit)}
+                    disabled={createRentalMutation.isPending || !isValid}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
                   {createRentalMutation.isPending ? (
@@ -213,6 +271,7 @@ export default function NewRentalWizardPage() {
                   )}
                 </Button>
               )}
+              </div>
             </div>
 
           </form>

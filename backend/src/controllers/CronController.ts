@@ -13,4 +13,9 @@ export class CronController {
     const result = await cronService.processDailySubscriptions();
     res.status(200).json({ success: true, data: result });
   }
+
+  async processDailyRentals(req: Request, res: Response) {
+    const result = await cronService.processDailyRentals();
+    res.status(200).json({ success: true, data: result });
+  }
 }

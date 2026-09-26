@@ -18,6 +18,7 @@ const seedPackages = async () => {
       trialDays: 14,
       maxVehicles: 10,
       maxUsers: 2,
+      maxBranches: 1,
       features: { basicReporting: true, support: 'email' }
     },
     {
@@ -27,6 +28,7 @@ const seedPackages = async () => {
       trialDays: 14,
       maxVehicles: 50,
       maxUsers: 5,
+      maxBranches: 3,
       features: { basicReporting: true, advancedReporting: true, support: 'priority' }
     },
     {
@@ -36,6 +38,7 @@ const seedPackages = async () => {
       trialDays: 14,
       maxVehicles: 200,
       maxUsers: 15,
+      maxBranches: 5,
       features: { basicReporting: true, advancedReporting: true, apiAccess: true, support: '24/7' }
     },
     {
@@ -45,6 +48,7 @@ const seedPackages = async () => {
       trialDays: 14,
       maxVehicles: 1000,
       maxUsers: 100,
+      maxBranches: 10,
       features: { allFeatures: true, customIntegrations: true, dedicatedManager: true }
     }
   ];

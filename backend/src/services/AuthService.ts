@@ -3,6 +3,7 @@ import { UserRepository } from '../repositories/UserRepository';
 import { RoleRepository } from '../repositories/RoleRepository';
 import { SubscriptionRepository } from '../repositories/SubscriptionRepository';
 import { PackageRepository } from '../repositories/PackageRepository';
+import { NotificationService } from './NotificationService';
 import { generateId, IdPrefix } from '../utils/idGenerator';
 import { AppError } from '../utils/AppError';
 import { auth } from '../config/firebase';
@@ -12,6 +13,7 @@ const userRepo = new UserRepository();
 const roleRepo = new RoleRepository();
 const subRepo = new SubscriptionRepository();
 const packageRepo = new PackageRepository();
+const notificationService = new NotificationService();
 
 export class AuthService {
   async register(
@@ -169,10 +171,20 @@ export class AuthService {
     }
 
     // Convert Firestore Timestamp to Date for comparison if necessary
-    const trialEndAt = activeSub.trialEndAt.toDate ? activeSub.trialEndAt.toDate() : new Date(activeSub.trialEndAt);
+    const rawTrialEnd = activeSub.trialEndAt as any;
+    const trialEndAt = rawTrialEnd && typeof rawTrialEnd.toDate === 'function' ? rawTrialEnd.toDate() : new Date(activeSub.trialEndAt);
     if (activeSub.status === 'TRIAL' && new Date() > trialEndAt) {
       // Logic to transition to EXPIRED could go here in a background job or middleware
       throw new AppError('Trial expired', 'PAYMENT_REQUIRED', 402);
+    }
+
+    // Fetch Role Permissions
+    let permissions: string[] = [];
+    if (user.roleId) {
+      const role = await roleRepo.findById(user.roleId);
+      if (role && role.permissions) {
+        permissions = role.permissions;
+      }
     }
 
     return {
@@ -182,7 +194,8 @@ export class AuthService {
         email: user.email,
         roleId: user.roleId,
         userType: user.userType,
-        tenantId: user.tenantId
+        tenantId: user.tenantId,
+        permissions
       },
       tenant: {
         id: tenant.id,
@@ -286,5 +299,37 @@ export class AuthService {
       },
       subscription: activeSub
     };
+  }
+
+  async forgotPassword(email: string) {
+    let userRecord;
+    try {
+      userRecord = await auth.getUserByEmail(email);
+    } catch (error: any) {
+      // If user not found, we silently return to prevent email enumeration attacks
+      if (error.code === 'auth/user-not-found') {
+        return;
+      }
+      throw new AppError('Failed to process password reset request', 'INTERNAL_SERVER_ERROR', 500);
+    }
+
+    const user = await userRepo.findByFirebaseUid(userRecord.uid);
+    if (!user) {
+      return;
+    }
+
+    try {
+      const resetLink = await auth.generatePasswordResetLink(email);
+      
+      await notificationService.queueNotification(user.tenantId, user.id, {
+        type: 'PASSWORD_RESET',
+        channel: 'EMAIL',
+        subject: 'Reset Your Password',
+        message: `Please click the following link to reset your password: ${resetLink}`
+      });
+    } catch (error) {
+      console.error('Error generating password reset link', error);
+      throw new AppError('Failed to generate reset link', 'INTERNAL_SERVER_ERROR', 500);
+    }
   }
 }

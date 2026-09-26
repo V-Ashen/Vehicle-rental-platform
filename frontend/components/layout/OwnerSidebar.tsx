@@ -11,27 +11,41 @@ import {
   FileText, 
   Settings, 
   CreditCard,
+  Shield,
   Menu,
   X
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from 'cn';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 
 export function OwnerSidebar() {
   const currentPath = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const { dbUser } = useAuth();
 
-  const links = [
-    { name: 'Dashboard', href: '/owner/dashboard', icon: LayoutDashboard },
-    { name: 'Rentals', href: '/owner/rentals', icon: Key },
-    { name: 'Vehicles', href: '/owner/vehicles', icon: Car },
-    { name: 'Customers', href: '/owner/customers', icon: Users },
-    { name: 'Maintenance', href: '/owner/maintenance', icon: Wrench },
-    { name: 'Reports', href: '/owner/reports', icon: FileText },
-    { name: 'Settings', href: '/owner/settings', icon: Settings },
-    { name: 'Billing', href: '/owner/billing', icon: CreditCard },
+  // Helper to check permissions
+  const hasPermission = (permission: string) => {
+    if (!dbUser) return false;
+    if (dbUser.userType === 'OWNER') return true;
+    return dbUser.permissions?.includes(permission);
+  };
+
+  const allLinks = [
+    { name: 'Dashboard', href: '/owner/dashboard', icon: LayoutDashboard }, // Dashboard usually visible to all
+    { name: 'Rentals', href: '/owner/rentals', icon: Key, requiredPermission: 'rentals.view' },
+    { name: 'Vehicles', href: '/owner/vehicles', icon: Car, requiredPermission: 'vehicles.view' },
+    { name: 'Customers', href: '/owner/customers', icon: Users, requiredPermission: 'customers.view' },
+    { name: 'Maintenance', href: '/owner/maintenance', icon: Wrench, requiredPermission: 'vehicles.manage' },
+    { name: 'Reports', href: '/owner/reports', icon: FileText, requiredPermission: 'reports.view' },
+    { name: 'Customer Payments', href: '/owner/payments', icon: CreditCard, requiredPermission: 'billing.manage' },
+    { name: 'Users & Roles', href: '/owner/users', icon: Shield, requiredPermission: 'users.manage' },
+    { name: 'Settings', href: '/owner/settings', icon: Settings, requiredPermission: 'settings.manage' },
+    { name: 'Billing', href: '/owner/billing', icon: CreditCard, requiredPermission: 'billing.manage' },
   ];
+
+  const links = allLinks.filter(link => !link.requiredPermission || hasPermission(link.requiredPermission));
 
   return (
     <>

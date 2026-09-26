@@ -19,6 +19,17 @@ export interface Tenant extends BaseEntity {
   logoUrl?: string;
   profileStatus: 'INCOMPLETE' | 'PENDING' | 'VERIFIED' | 'REJECTED';
   accountStatus: 'ACTIVE' | 'SUSPENDED' | 'DISABLED';
+  
+  // Rental Rules Settings
+  gracePeriodMinutes?: number;
+  hourlyLateCharge?: number;
+  defaultIncludedKmPerDay?: number;
+
+  // Extended Settings
+  emailEnabled?: boolean;
+  smsEnabled?: boolean;
+  invoiceNotes?: string;
+  agreementTerms?: string;
 }
 
 export interface User extends BaseEntity {
@@ -52,6 +63,7 @@ export interface Package extends BaseEntity {
   trialDays: number;
   maxVehicles: number;
   maxUsers: number;
+  maxBranches: number;
   features: Record<string, any>;
 }
 
@@ -80,7 +92,7 @@ export interface PaymentRequest extends BaseEntity {
 
 export interface Payment extends BaseEntity {
   tenantId: string | null;
-  paymentType: 'SUBSCRIPTION' | 'RENTAL' | 'DEPOSIT' | 'OTHER';
+  paymentType: 'SUBSCRIPTION' | 'RENTAL' | 'DEPOSIT' | 'OTHER' | 'ADVANCE' | 'DAMAGE';
   referenceId: string;
   amount: number;
   currency: string;
@@ -89,6 +101,32 @@ export interface Payment extends BaseEntity {
   providerTransactionId: string | null;
   status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
   paidAt: Date | null;
+  metadata?: Record<string, any>;
+}
+
+export interface AuditLog {
+  id: string;
+  tenantId: string;
+  userId: string;
+  action: string;
+  module: string;
+  entityId: string;
+  oldData?: any;
+  newData?: any;
+  timestamp: Date;
+}
+
+export interface Staff {
+  id: string;
+  tenantId: string;
+  firebaseUid: string;
+  email: string;
+  fullName: string;
+  roleId: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
 }
 
 export interface Customer extends BaseEntity {
@@ -223,4 +261,13 @@ export interface Notification extends BaseEntity {
   subject: string;
   message: string;
   status: 'QUEUED' | 'SENT' | 'FAILED';
+}
+
+export interface Branch extends BaseEntity {
+  tenantId: string;
+  name: string;
+  address: string;
+  city: string;
+  phone: string;
+  status: 'ACTIVE' | 'INACTIVE';
 }

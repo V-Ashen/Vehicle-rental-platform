@@ -55,10 +55,18 @@ export default function ReturnRentalWizardPage({ params }: { params: Promise<{ i
   // React 19 unwrapping params
   const { id: rentalId } = React.use(params);
 
-  const { data: rentalData, isLoading, isError } = useQuery({
+  const { data: rentalData, isLoading: rentalLoading, isError } = useQuery({
     queryKey: ["owner-rental", rentalId],
     queryFn: async () => {
       const res = await apiClient.get(`/rentals/${rentalId}`);
+      return res.data.data;
+    },
+  });
+
+  const { data: tenantData, isLoading: tenantLoading } = useQuery({
+    queryKey: ["owner-profile"],
+    queryFn: async () => {
+      const res = await apiClient.get("/owner/profile");
       return res.data.data;
     },
   });
@@ -80,12 +88,17 @@ export default function ReturnRentalWizardPage({ params }: { params: Promise<{ i
 
   const { handleSubmit, trigger, setValue, watch, formState: { isValid } } = methods;
 
-  // Initialize endOdometer from pickupHandover when data loads
+  // Initialize endOdometer from pickupHandover and rules from tenant
   useEffect(() => {
     if (rentalData?.startOdometer && methods.getValues("endOdometer") === 0) {
       setValue("endOdometer", rentalData.startOdometer, { shouldValidate: true });
     }
-  }, [rentalData, setValue, methods]);
+    
+    if (tenantData) {
+      setValue("gracePeriodMinutes", tenantData.gracePeriodMinutes ?? 60);
+      setValue("hourlyLateCharge", tenantData.hourlyLateCharge ?? 1000);
+    }
+  }, [rentalData, tenantData, setValue, methods]);
 
   const nextStep = async () => {
     let fieldsToValidate: any[] = [];
@@ -160,8 +173,8 @@ export default function ReturnRentalWizardPage({ params }: { params: Promise<{ i
     processReturnMutation.mutate(data);
   };
 
-  if (isLoading) {
-    return <div className="p-12 text-center text-slate-500">Loading rental data...</div>;
+  if (rentalLoading || tenantLoading) {
+    return <div className="p-12 text-center text-slate-500">Loading return wizard...</div>;
   }
 
   if (isError || !rentalData) {
@@ -191,13 +204,9 @@ export default function ReturnRentalWizardPage({ params }: { params: Promise<{ i
 
         <FormProvider {...methods}>
           <form 
-            onSubmit={handleSubmit(onSubmit)} 
             className="space-y-8"
             onKeyDown={(e) => {
-              // Prevent Enter key from auto-submitting the form, unless it's on a textarea or button
-              if (e.key === 'Enter' && e.target instanceof HTMLElement && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') {
-                e.preventDefault();
-              }
+              if (e.key === 'Enter') e.preventDefault();
             }}
           >
             
@@ -223,8 +232,9 @@ export default function ReturnRentalWizardPage({ params }: { params: Promise<{ i
                 Previous
               </Button>
 
-              {currentStep < 3 ? (
+              {currentStep < 3 && (
                 <Button 
+                  key="continue-btn"
                   type="button" 
                   onClick={nextStep} 
                   className="bg-indigo-600 hover:bg-indigo-700"
@@ -232,9 +242,13 @@ export default function ReturnRentalWizardPage({ params }: { params: Promise<{ i
                   Continue
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
-              ) : (
+              )}
+              
+              {currentStep === 3 && (
                 <Button 
-                  type="submit" 
+                  key="submit-btn"
+                  type="button" 
+                  onClick={handleSubmit(onSubmit)}
                   disabled={processReturnMutation.isPending || !isValid}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 >

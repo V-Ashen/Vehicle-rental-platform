@@ -2,10 +2,13 @@
 
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function TopNavbar({ user }: { user: any }) {
+  const queryClient = useQueryClient();
   
   const handleLogout = async () => {
+    queryClient.clear();
     await signOut(auth);
   };
 

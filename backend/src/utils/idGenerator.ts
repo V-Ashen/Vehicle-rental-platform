@@ -23,6 +23,7 @@ export enum IdPrefix {
   VEHDOC = 'VDC',
   NOTIFICATION = 'NTF',
   PAYMENT_REQUEST = 'PRQ',
+  SYSTEM = 'SYS',
 }
 
 /**

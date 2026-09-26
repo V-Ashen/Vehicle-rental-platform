@@ -53,7 +53,7 @@ export default function Step3Handover() {
       
       for (const file of files) {
         // 1. Get pre-signed URL from our backend
-        const res = await apiClient.post("/upload/generate-signed-url", {
+        const res = await apiClient.post("/owner/upload/generate-signed-url", {
           fileName: file.name,
           contentType: file.type,
           fileCategory: "handover"

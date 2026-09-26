@@ -101,7 +101,8 @@ export default function PackagesPage() {
                   <TableCell>
                     <div className="text-sm text-slate-600">
                       Vehicles: {pkg.maxVehicles === -1 ? 'Unlimited' : pkg.maxVehicles} <br />
-                      Users: {pkg.maxUsers === -1 ? 'Unlimited' : pkg.maxUsers}
+                      Users: {pkg.maxUsers === -1 ? 'Unlimited' : pkg.maxUsers} <br />
+                      Branches: {pkg.maxBranches === -1 ? 'Unlimited' : (pkg.maxBranches || 1)}
                     </div>
                   </TableCell>
                   <TableCell>

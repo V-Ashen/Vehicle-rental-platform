@@ -106,17 +106,54 @@ export class RentalService {
   }
 
   async createRental(tenantId: string, data: any, userId: string) {
-    const { customerId, vehicleId, pickupAt, expectedReturnAt } = data;
+    const { customerId, vehicleId, pickupAt, expectedReturnAt, depositAmount } = data;
 
     // Validate customer
     const customer = await customerRepo.findById(customerId, tenantId);
     if (!customer) throw new AppError('Customer not found', 'NOT_FOUND', 404);
+
+    const tenantDoc = await db.collection('tenants').doc(tenantId).get();
+    const tData = tenantDoc.exists ? tenantDoc.data() : null;
+    const businessName = tData?.companyName || tData?.name || 'Rental Company';
 
     const pickupDate = new Date(pickupAt);
     const returnDate = new Date(expectedReturnAt);
     
     if (pickupDate >= returnDate) {
       throw new AppError('Return date must be after pickup date', 'VALIDATION_ERROR', 400);
+    }
+
+    // Subscription Check for maxMonthlyRentals Limit
+    const subsSnapshot = await db.collection('subscriptions').where('tenantId', '==', tenantId).get();
+    const activeSub = subsSnapshot.docs.map(doc => doc.data()).find(s => s.status === 'ACTIVE' || s.status === 'TRIAL');
+    
+    if (!activeSub) {
+      throw new AppError('No active subscription found for tenant', 'FORBIDDEN', 403);
+    }
+
+    const packageDoc = await db.collection('packages').doc(activeSub.packageId).get();
+    const packageData = packageDoc.data();
+    
+    if (!packageData) {
+      throw new AppError('Subscription package not found', 'INTERNAL_SERVER_ERROR', 500);
+    }
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const monthlyRentalsSnapshot = await db.collection('rentals')
+      .where('tenantId', '==', tenantId)
+      .where('createdAt', '>=', startOfMonth)
+      .where('createdAt', '<=', endOfMonth)
+      .count()
+      .get();
+      
+    const currentMonthlyRentals = monthlyRentalsSnapshot.data().count;
+
+    // Check if the package allows unlimited (-1 or something) or enforce it
+    if (packageData.maxMonthlyRentals !== -1 && currentMonthlyRentals >= packageData.maxMonthlyRentals) {
+      throw new AppError(`Upgrade required. Your current plan allows a maximum of ${packageData.maxMonthlyRentals} rentals per month.`, 'PAYMENT_REQUIRED', 402);
     }
 
     const diffHours = Math.abs(returnDate.getTime() - pickupDate.getTime()) / 36e5;
@@ -127,6 +164,7 @@ export class RentalService {
     const rentalRef = db.collection('rentals').doc(rentalId);
 
     let createdRental: any = null;
+    let vehicleData: any = null;
 
     try {
       await db.runTransaction(async (t) => {
@@ -137,6 +175,7 @@ export class RentalService {
         }
 
         const vehicle = vehicleDoc.data();
+        vehicleData = vehicle;
         if (vehicle?.tenantId !== tenantId) {
           throw new AppError('Vehicle not found', 'NOT_FOUND', 404);
         }
@@ -165,6 +204,7 @@ export class RentalService {
           damageCharges: 0,
           otherCharges: 0,
           totalAmount: baseRentalAmount,
+          balanceDue: baseRentalAmount,
           status: 'RESERVED',
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -180,20 +220,83 @@ export class RentalService {
 
         t.set(rentalRef, rentalData);
         createdRental = rentalData;
+
+        // Create Deposit record if applicable
+        if (depositAmount && depositAmount > 0) {
+          const depositId = generateId(IdPrefix.SYSTEM); // or DEP-
+          const depositRef = db.collection('deposits').doc(depositId);
+          t.set(depositRef, {
+            id: depositId,
+            tenantId,
+            rentalId,
+            customerId,
+            amount: depositAmount,
+            status: 'HELD',
+            deductedAmount: 0,
+            refundedAmount: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            createdBy: userId,
+            updatedBy: userId
+          });
+        }
       });
 
-      // Fire and forget notification queueing (Retrofit for Phase 6)
+      // Fire and forget notification queueing
       notificationService.queueNotification(tenantId, customerId, {
         type: 'BOOKING_CONFIRMATION',
         channel: 'EMAIL',
         subject: 'Your Booking is Confirmed!',
-        message: `Your rental for vehicle ${vehicleId} is confirmed from ${pickupDate.toISOString()} to ${returnDate.toISOString()}.`
+        customerName: customer.fullName || customer.name,
+        businessName: businessName,
+        vehicleName: vehicleData ? `${vehicleData.make} ${vehicleData.model} (${vehicleData.registrationNumber})` : 'Vehicle',
+        pickupDate: pickupDate.toLocaleString(),
+        dropoffDate: returnDate.toLocaleString(),
       }).catch(err => console.error('Failed to queue notification', err));
 
       return createdRental;
     } catch (e: any) {
       if (e instanceof AppError) throw e;
       throw new AppError(`Rental transaction failed: ${e.message}`, 'INTERNAL_SERVER_ERROR', 500);
+    }
+  }
+
+  async cancelRental(rentalId: string, tenantId: string, userId: string) {
+    const rentalRef = db.collection('rentals').doc(rentalId);
+    
+    try {
+      await db.runTransaction(async (t) => {
+        const rentalDoc = await t.get(rentalRef);
+        if (!rentalDoc.exists) throw new AppError('Rental not found', 'NOT_FOUND', 404);
+        
+        const rental = rentalDoc.data();
+        if (rental?.tenantId !== tenantId) throw new AppError('Rental not found', 'NOT_FOUND', 404);
+        
+        if (rental?.status !== 'RESERVED') {
+          throw new AppError('Only RESERVED rentals can be cancelled', 'INVALID_STATE', 400);
+        }
+
+        const vehicleRef = db.collection('vehicles').doc(rental.vehicleId);
+        
+        // Update vehicle status back to AVAILABLE
+        t.update(vehicleRef, {
+          status: 'AVAILABLE',
+          updatedAt: new Date(),
+          updatedBy: userId
+        });
+
+        // Update rental status to CANCELLED
+        t.update(rentalRef, {
+          status: 'CANCELLED',
+          updatedAt: new Date(),
+          updatedBy: userId
+        });
+      });
+      
+      return { id: rentalId, status: 'CANCELLED' };
+    } catch (e: any) {
+      if (e instanceof AppError) throw e;
+      throw new AppError(`Cancel rental transaction failed: ${e.message}`, 'INTERNAL_SERVER_ERROR', 500);
     }
   }
 
@@ -321,6 +424,46 @@ export class RentalService {
         // D. Final Settlement
         const finalTotal = rental.baseRentalAmount + extraKmCharge + lateCharge + damageTotal + extraOtherCharges;
 
+        // E. Deposit Deductions & Balance Calculation
+        const previousTotal = rental.totalAmount || 0;
+        const previousBalance = rental.balanceDue ?? previousTotal;
+        const previouslyPaid = previousTotal - previousBalance;
+        
+        let amountToDeduct = 0;
+
+        const depositQuery = db.collection('deposits')
+          .where('rentalId', '==', rentalId)
+          .where('status', '==', 'HELD')
+          .limit(1);
+        const depositSnapshot = await t.get(depositQuery);
+        
+        if (!depositSnapshot.empty) {
+          const depositDoc = depositSnapshot.docs[0];
+          const depositData = depositDoc.data();
+          
+          const excessCharges = extraKmCharge + lateCharge + damageTotal + extraOtherCharges;
+          
+          if (excessCharges > 0) {
+            amountToDeduct = Math.min(excessCharges, depositData.amount);
+          }
+
+          const refundedAmount = depositData.amount - amountToDeduct;
+          let newStatus = 'REFUNDED';
+          if (amountToDeduct > 0) {
+            newStatus = amountToDeduct === depositData.amount ? 'APPLIED' : 'PARTIALLY_REFUNDED';
+          }
+
+          t.update(depositDoc.ref, {
+            status: newStatus,
+            deductedAmount: amountToDeduct,
+            refundedAmount,
+            updatedAt: new Date(),
+            updatedBy: userId
+          });
+        }
+
+        const finalBalanceDue = Math.max(0, finalTotal - previouslyPaid - amountToDeduct);
+
         // --- DATABASE UPDATES ---
         
         // Create Return Handover record
@@ -409,6 +552,7 @@ export class RentalService {
           damageCharges: damageTotal,
           otherCharges: extraOtherCharges,
           totalAmount: finalTotal,
+          balanceDue: finalBalanceDue,
           updatedAt: new Date(),
           updatedBy: userId
         });

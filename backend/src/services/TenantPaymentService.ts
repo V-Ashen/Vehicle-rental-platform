@@ -26,6 +26,17 @@ export class TenantPaymentService {
     const currentSub = subs.data[0];
     if (!currentSub) throw new AppError('Active subscription not found', 'NOT_FOUND', 404);
 
+    // Downgrade Validation
+    const activeVehiclesSnapshot = await db.collection('vehicles')
+      .where('tenantId', '==', tenantId)
+      .where('status', '!=', 'ARCHIVED')
+      .get();
+    const activeVehiclesCount = activeVehiclesSnapshot.size;
+
+    if (activeVehiclesCount > pkg.maxVehicles) {
+      throw new AppError(`You currently have ${activeVehiclesCount} vehicles. The selected package supports only ${pkg.maxVehicles}. Please archive vehicles before downgrading.`, 'VALIDATION_ERROR', 400);
+    }
+
     const prqId = generateId(IdPrefix.PAYMENT_REQUEST);
     const result = await paymentRequestRepo.create(prqId, {
       tenantId,
@@ -60,6 +71,17 @@ export class TenantPaymentService {
     const currentSub = subs.data[0];
     if (!currentSub) throw new AppError('Active subscription not found', 'NOT_FOUND', 404);
 
+    // Downgrade Validation
+    const activeVehiclesSnapshot = await db.collection('vehicles')
+      .where('tenantId', '==', tenantId)
+      .where('status', '!=', 'ARCHIVED')
+      .get();
+    const activeVehiclesCount = activeVehiclesSnapshot.size;
+
+    if (activeVehiclesCount > pkg.maxVehicles) {
+      throw new AppError(`You currently have ${activeVehiclesCount} vehicles. The selected package supports only ${pkg.maxVehicles}. Please archive vehicles before downgrading.`, 'VALIDATION_ERROR', 400);
+    }
+
     const paymentId = generateId(IdPrefix.PAYMENT);
     
     const paymentData = {
@@ -74,6 +96,9 @@ export class TenantPaymentService {
       providerTransactionId: null,
       status: 'PENDING',
       paidAt: null,
+      metadata: {
+        packageId: pkg.id
+      },
       createdAt: new Date(),
       updatedAt: new Date(),
       createdBy: userId,

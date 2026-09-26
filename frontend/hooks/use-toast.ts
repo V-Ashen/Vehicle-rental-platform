@@ -2,10 +2,15 @@ import { toast as sonnerToast } from "sonner";
 
 export function useToast() {
   const customToast = (props: any) => {
+    const options: any = { description: props.description };
+    if (props.action) options.action = props.action;
+
     if (props.variant === 'destructive') {
-      sonnerToast.error(props.title, { description: props.description });
+      sonnerToast.error(props.title, options);
+    } else if (props.variant === 'success') {
+      sonnerToast.success(props.title, options);
     } else {
-      sonnerToast.success(props.title, { description: props.description });
+      sonnerToast(props.title, options);
     }
   };
 
@@ -17,9 +22,14 @@ export function useToast() {
 }
 
 export const toast = (props: any) => {
+  const options: any = { description: props.description };
+  if (props.action) options.action = props.action;
+
   if (props.variant === 'destructive') {
-    sonnerToast.error(props.title, { description: props.description });
+    sonnerToast.error(props.title, options);
+  } else if (props.variant === 'success') {
+    sonnerToast.success(props.title, options);
   } else {
-    sonnerToast.success(props.title, { description: props.description });
+    sonnerToast(props.title, options);
   }
 };

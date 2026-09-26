@@ -11,7 +11,7 @@ export const helmetConfig = helmet({
 // 2. Auth Rate Limiter - Strict for brute force protection (5 requests per 15 minutes)
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
-  max: process.env.NODE_ENV === 'production' ? 5 : 100, 
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, 
   message: { success: false, message: 'Too many authentication attempts, please try again later.' },
   standardHeaders: true, 
   legacyHeaders: false,
@@ -20,7 +20,7 @@ export const authRateLimiter = rateLimit({
 // 3. Global API Rate Limiter (100 requests per 15 minutes per IP)
 export const globalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100, 
+  max: 1000, 
   message: { success: false, message: 'Too many requests from this IP, please try again after 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
