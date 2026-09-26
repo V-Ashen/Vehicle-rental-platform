@@ -31,11 +31,20 @@ export class CronService {
         let userName: string | undefined = data.userName;
 
         if (!recipientEmail && data.userId && data.userId !== 'TENANT_ADMIN') {
-          const userDoc = await db.collection('users').doc(data.userId).get();
-          if (userDoc.exists) {
-            const userData = userDoc.data();
-            recipientEmail = userData?.email || null;
-            userName = userData?.fullName || userData?.name;
+          if (data.userId.startsWith('CUS-')) {
+            const customerDoc = await db.collection('customers').doc(data.userId).get();
+            if (customerDoc.exists) {
+              const customerData = customerDoc.data();
+              recipientEmail = customerData?.email || null;
+              userName = customerData?.fullName || customerData?.name;
+            }
+          } else {
+            const userDoc = await db.collection('users').doc(data.userId).get();
+            if (userDoc.exists) {
+              const userData = userDoc.data();
+              recipientEmail = userData?.email || null;
+              userName = userData?.fullName || userData?.name;
+            }
           }
         }
 
@@ -62,7 +71,8 @@ export class CronService {
             resetLink: data.message && data.message.startsWith('http') ? data.message : undefined,
             amount: data.amount,
             planName: data.planName,
-            expiryDays: data.expiryDays
+            expiryDays: data.expiryDays,
+            ...data
           },
           data.message
         );

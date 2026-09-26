@@ -29,7 +29,7 @@ const formSchema = z.object({
   nicPassport: z.string().min(5, "NIC or Passport is required."),
   drivingLicence: z.string().min(5, "Driving Licence is required."),
   mobile: z.string().min(10, "Mobile number is required."),
-  email: z.string().email("Invalid email address.").optional().or(z.literal("")),
+  email: z.string().email("Invalid email address."),
   address: z.string().min(5, "Address is required."),
 });
 
@@ -176,7 +176,7 @@ export function CustomerFormModal({ isOpen, setIsOpen, initialData }: CustomerFo
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email (Optional)</FormLabel>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input placeholder="john@example.com" {...field} />
                     </FormControl>

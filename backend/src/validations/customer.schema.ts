@@ -4,7 +4,7 @@ export const createCustomerSchema = z.object({
   body: z.object({
     fullName: z.string().min(2),
     mobile: z.string().min(10),
-    email: z.string().email().optional(),
+    email: z.string().email(),
     nicPassport: z.string().min(5),
     drivingLicence: z.string().min(5),
     address: z.string().min(5)

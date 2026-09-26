@@ -19,7 +19,7 @@ export default function Step1Customer() {
   const { toast } = useToast();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newCust, setNewCust] = useState({ fullName: "", mobile: "", nicPassport: "" });
+  const [newCust, setNewCust] = useState({ fullName: "", mobile: "", nicPassport: "", email: "", drivingLicence: "", address: "" });
 
   const { data: responseData, isLoading, isError } = useQuery({
     queryKey: ["owner-customers"],
@@ -41,7 +41,7 @@ export default function Step1Customer() {
       setValue("customerId", newCustomer.id);
       toast({ title: "Success", description: "Customer created successfully" });
       setIsDialogOpen(false);
-      setNewCust({ fullName: "", mobile: "", nicPassport: "" });
+      setNewCust({ fullName: "", mobile: "", nicPassport: "", email: "", drivingLicence: "", address: "" });
     },
     onError: (error: any) => {
       toast({
@@ -53,8 +53,8 @@ export default function Step1Customer() {
   });
 
   const handleCreateCustomer = () => {
-    if (!newCust.fullName || !newCust.mobile) {
-      toast({ title: "Validation Error", description: "Name and Mobile are required", variant: "destructive" });
+    if (!newCust.fullName || !newCust.mobile || !newCust.email) {
+      toast({ title: "Validation Error", description: "Name, Mobile, and Email are required", variant: "destructive" });
       return;
     }
     createCustomerMutation.mutate(newCust);
@@ -102,11 +102,36 @@ export default function Step1Customer() {
                 />
               </div>
               <div className="space-y-2">
+                <FormLabel>Email Address</FormLabel>
+                <Input 
+                  value={newCust.email}
+                  onChange={(e) => setNewCust({ ...newCust, email: e.target.value })}
+                  placeholder="e.g. john@example.com"
+                  type="email"
+                />
+              </div>
+              <div className="space-y-2">
                 <FormLabel>NIC / Passport</FormLabel>
                 <Input 
                   value={newCust.nicPassport}
                   onChange={(e) => setNewCust({ ...newCust, nicPassport: e.target.value })}
                   placeholder="e.g. 199012345678"
+                />
+              </div>
+              <div className="space-y-2">
+                <FormLabel>Driving Licence</FormLabel>
+                <Input 
+                  value={newCust.drivingLicence}
+                  onChange={(e) => setNewCust({ ...newCust, drivingLicence: e.target.value })}
+                  placeholder="e.g. B1234567"
+                />
+              </div>
+              <div className="space-y-2">
+                <FormLabel>Address</FormLabel>
+                <Input 
+                  value={newCust.address}
+                  onChange={(e) => setNewCust({ ...newCust, address: e.target.value })}
+                  placeholder="e.g. 123 Main St, City"
                 />
               </div>
               <Button 

@@ -112,6 +112,10 @@ export class RentalService {
     const customer = await customerRepo.findById(customerId, tenantId);
     if (!customer) throw new AppError('Customer not found', 'NOT_FOUND', 404);
 
+    const tenantDoc = await db.collection('tenants').doc(tenantId).get();
+    const tData = tenantDoc.exists ? tenantDoc.data() : null;
+    const businessName = tData?.companyName || tData?.name || 'Rental Company';
+
     const pickupDate = new Date(pickupAt);
     const returnDate = new Date(expectedReturnAt);
     
@@ -160,6 +164,7 @@ export class RentalService {
     const rentalRef = db.collection('rentals').doc(rentalId);
 
     let createdRental: any = null;
+    let vehicleData: any = null;
 
     try {
       await db.runTransaction(async (t) => {
@@ -170,6 +175,7 @@ export class RentalService {
         }
 
         const vehicle = vehicleDoc.data();
+        vehicleData = vehicle;
         if (vehicle?.tenantId !== tenantId) {
           throw new AppError('Vehicle not found', 'NOT_FOUND', 404);
         }
@@ -236,12 +242,16 @@ export class RentalService {
         }
       });
 
-      // Fire and forget notification queueing (Retrofit for Phase 6)
+      // Fire and forget notification queueing
       notificationService.queueNotification(tenantId, customerId, {
         type: 'BOOKING_CONFIRMATION',
         channel: 'EMAIL',
         subject: 'Your Booking is Confirmed!',
-        message: `Your rental for vehicle ${vehicleId} is confirmed from ${pickupDate.toISOString()} to ${returnDate.toISOString()}.`
+        customerName: customer.fullName || customer.name,
+        businessName: businessName,
+        vehicleName: vehicleData ? `${vehicleData.make} ${vehicleData.model} (${vehicleData.registrationNumber})` : 'Vehicle',
+        pickupDate: pickupDate.toLocaleString(),
+        dropoffDate: returnDate.toLocaleString(),
       }).catch(err => console.error('Failed to queue notification', err));
 
       return createdRental;
