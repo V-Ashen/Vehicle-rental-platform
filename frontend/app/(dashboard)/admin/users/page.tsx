@@ -131,7 +131,7 @@ export default function AdminUsersPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">SaaS Role</label>
-                <Select value={inviteData.saasRole} onValueChange={(val) => setInviteData({...inviteData, saasRole: val})}>
+                <Select value={inviteData.saasRole} onValueChange={(val) => setInviteData({...inviteData, saasRole: val || 'SUPPORT_ADMIN'})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>

@@ -54,7 +54,7 @@ export default function GeneralSettingsForm() {
   });
 
   const form = useForm<GeneralFormValues>({
-    resolver: zodResolver(generalSchema),
+    resolver: zodResolver(generalSchema) as any,
     values: tenant ? {
       businessName: tenant.businessName || "",
       email: tenant.email || "",
@@ -143,7 +143,7 @@ export default function GeneralSettingsForm() {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}

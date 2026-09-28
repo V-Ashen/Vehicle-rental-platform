@@ -74,11 +74,9 @@ export default function Step1Customer() {
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button type="button" variant="outline" className="bg-white dark:bg-slate-900">
+          <DialogTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-slate-100 hover:text-accent-foreground h-10 px-4 py-2 bg-white dark:bg-slate-900">
               <Plus className="w-4 h-4 mr-2" />
               New Customer
-            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>

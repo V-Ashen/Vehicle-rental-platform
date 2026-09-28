@@ -117,7 +117,6 @@ export default function Step2VehicleDates() {
                           mode="single"
                           selected={field.value}
                           onSelect={(date) => handleDateSelect(date, "pickupAt", field.value)}
-                          initialFocus
                           disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
                         />
                       </PopoverContent>
@@ -180,7 +179,6 @@ export default function Step2VehicleDates() {
                           mode="single"
                           selected={field.value}
                           onSelect={(date) => handleDateSelect(date, "expectedReturnAt", field.value)}
-                          initialFocus
                           disabled={(date) => pickupAt ? date < new Date(new Date(pickupAt).setHours(0,0,0,0)) : date < new Date(new Date().setHours(0,0,0,0))}
                         />
                       </PopoverContent>

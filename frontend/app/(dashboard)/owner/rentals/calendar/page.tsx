@@ -2,11 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import format from 'date-fns/format';
-import parse from 'date-fns/parse';
-import startOfWeek from 'date-fns/startOfWeek';
-import getDay from 'date-fns/getDay';
-import enUS from 'date-fns/locale/en-US';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar.css';
 import { apiClient } from '@/lib/api';
@@ -49,8 +46,8 @@ export default function RentalsCalendarPage() {
         const customerMap = new Map(customers.map((c: any) => [c.id, c]));
 
         const calendarEvents = rentals.map((rental: any) => {
-          const vehicle = vehicleMap.get(rental.vehicleId);
-          const customer = customerMap.get(rental.customerId);
+          const vehicle = vehicleMap.get(rental.vehicleId) as any;
+          const customer = customerMap.get(rental.customerId) as any;
           
           // Parse ISO strings returned by the backend
           const start = rental.pickupAt ? new Date(rental.pickupAt) : new Date();

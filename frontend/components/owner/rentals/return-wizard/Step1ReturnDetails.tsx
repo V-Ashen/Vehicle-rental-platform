@@ -85,7 +85,6 @@ export default function Step1ReturnDetails({ rentalData }: Step1ReturnDetailsPro
                         field.onChange(newDate);
                       }
                     }}
-                    initialFocus
                   />
                 </PopoverContent>
               </Popover>

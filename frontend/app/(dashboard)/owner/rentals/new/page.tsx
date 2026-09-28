@@ -22,10 +22,10 @@ const rentalWizardSchema = z.object({
   customerId: z.string().min(1, "Please select a customer"),
   // Step 2
   vehicleId: z.string().min(1, "Please select a vehicle"),
-  pickupAt: z.date({ required_error: "Pickup date/time is required" }),
-  expectedReturnAt: z.date({ required_error: "Expected return date/time is required" }),
+  pickupAt: z.date(),
+  expectedReturnAt: z.date(),
   // Step 3
-  odometer: z.coerce.number().min(0, "Odometer must be a valid number"),
+  odometer: z.number().min(0, "Odometer must be a valid number"),
   fuelLevel: z.string().min(1, "Please provide the fuel level"),
   conditionStatus: z.enum(['GOOD', 'DAMAGED']),
   photoUrls: z.array(z.string().url()).optional(),
@@ -47,7 +47,7 @@ export default function NewRentalWizardPage() {
   const [currentStep, setCurrentStep] = useState(1);
 
   const methods = useForm<RentalWizardFormValues>({
-    resolver: zodResolver(rentalWizardSchema),
+    resolver: zodResolver(rentalWizardSchema) as any,
     defaultValues: {
       customerId: "",
       vehicleId: "",
@@ -254,7 +254,7 @@ export default function NewRentalWizardPage() {
                   <Button 
                     key="submit-btn"
                     type="button" 
-                    onClick={handleSubmit(onSubmit)}
+                    onClick={handleSubmit(onSubmit as any)}
                     disabled={createRentalMutation.isPending || !isValid}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 >

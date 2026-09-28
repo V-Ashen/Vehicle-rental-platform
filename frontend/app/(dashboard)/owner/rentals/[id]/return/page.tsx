@@ -19,8 +19,8 @@ import Step3Settlement from "@/components/owner/rentals/return-wizard/Step3Settl
 
 const returnWizardSchema = z.object({
   // Step 1
-  actualReturnAt: z.date({ required_error: "Return date/time is required" }),
-  endOdometer: z.coerce.number().min(0, "Odometer must be a positive number"),
+  actualReturnAt: z.date(),
+  endOdometer: z.number().min(0, "Odometer must be a positive number"),
   endFuelLevel: z.string().min(1, "Please provide the fuel level"),
   requiresMaintenance: z.boolean(),
   // Step 2
@@ -28,11 +28,11 @@ const returnWizardSchema = z.object({
     damageArea: z.string().min(1, "Area is required"),
     damageType: z.string().min(1, "Type is required"),
     description: z.string().min(1, "Description is required"),
-    estimatedCost: z.coerce.number().min(0),
+    estimatedCost: z.number().min(0),
     photoUrls: z.array(z.string().url()).optional()
   })).optional(),
   // Step 3 (Additional Fees)
-  otherCharges: z.coerce.number().min(0).optional().default(0),
+  otherCharges: z.number().min(0).optional().default(0),
   // Tenant Settings (Hardcoded for now as instructed)
   gracePeriodMinutes: z.number().default(60),
   hourlyLateCharge: z.number().default(1000)
@@ -72,7 +72,7 @@ export default function ReturnRentalWizardPage({ params }: { params: Promise<{ i
   });
 
   const methods = useForm<ReturnWizardFormValues>({
-    resolver: zodResolver(returnWizardSchema),
+    resolver: zodResolver(returnWizardSchema) as any,
     defaultValues: {
       actualReturnAt: new Date(),
       endOdometer: 0,
@@ -248,7 +248,7 @@ export default function ReturnRentalWizardPage({ params }: { params: Promise<{ i
                 <Button 
                   key="submit-btn"
                   type="button" 
-                  onClick={handleSubmit(onSubmit)}
+                  onClick={handleSubmit(onSubmit as any)}
                   disabled={processReturnMutation.isPending || !isValid}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
