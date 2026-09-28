@@ -24,6 +24,7 @@ export enum IdPrefix {
   NOTIFICATION = 'NTF',
   PAYMENT_REQUEST = 'PRQ',
   SYSTEM = 'SYS',
+  BRANCH = 'BRA',
 }
 
 /**

@@ -18,10 +18,13 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RequirePermission } from "@/components/auth/RequirePermission";
+import { PaginationControl } from '@/components/ui/pagination-control';
 
 export default function VehiclesPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data: responseData, isLoading } = useQuery({
     queryKey: ["owner-vehicles"],
@@ -122,7 +125,7 @@ export default function VehiclesPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredVehicles.map((vehicle: any) => (
+                filteredVehicles.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((vehicle: any) => (
                   <TableRow 
                     key={vehicle.id} 
                     className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
@@ -172,6 +175,14 @@ export default function VehiclesPage() {
             </TableBody>
           </Table>
         </div>
+        
+        {filteredVehicles && filteredVehicles.length > 0 && (
+          <PaginationControl 
+            currentPage={page}
+            totalPages={Math.ceil(filteredVehicles.length / itemsPerPage)}
+            onPageChange={setPage}
+          />
+        )}
       </div>
     </div>
   );

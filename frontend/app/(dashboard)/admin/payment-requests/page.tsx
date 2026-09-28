@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, FileCheck, FileX } from "lucide-react";
 import { PaymentActionModal } from "@/components/admin/payments/PaymentActionModal";
+import { PaginationControl } from '@/components/ui/pagination-control';
 
 export default function PaymentRequestsPage() {
   const queryClient = useQueryClient();
@@ -23,6 +24,8 @@ export default function PaymentRequestsPage() {
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [modalType, setModalType] = useState<'VIEW' | 'REJECT'>('VIEW');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ["admin-payment-requests"],
@@ -98,7 +101,7 @@ export default function PaymentRequestsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              requests?.map((req: any) => (
+              requests?.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((req: any) => (
                 <TableRow key={req.id}>
                   <TableCell className="font-medium text-slate-900 dark:text-white">
                     {req.tenantId}
@@ -146,6 +149,14 @@ export default function PaymentRequestsPage() {
             )}
           </TableBody>
         </Table>
+        
+        {requests && requests.length > 0 && (
+          <PaginationControl 
+            currentPage={page}
+            totalPages={Math.ceil(requests.length / itemsPerPage)}
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       <PaymentActionModal 

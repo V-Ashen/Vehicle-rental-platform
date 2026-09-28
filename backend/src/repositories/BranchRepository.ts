@@ -27,4 +27,8 @@ export class BranchRepository extends BaseRepository<Branch> {
       
     return snapshot.data().count;
   }
+
+  async delete(id: string): Promise<void> {
+    await this.collection.doc(id).delete();
+  }
 }

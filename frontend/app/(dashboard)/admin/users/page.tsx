@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Shield, User, Mail } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { PaginationControl } from '@/components/ui/pagination-control';
 
 const ROLES = [
   { value: 'SUPER_ADMIN', label: 'Super Admin', description: 'Full access to all platform features.' },
@@ -28,6 +29,8 @@ export default function AdminUsersPage() {
   
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [inviteData, setInviteData] = useState({ name: '', email: '', saasRole: 'SUPPORT_ADMIN' });
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users'],
@@ -184,7 +187,7 @@ export default function AdminUsersPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  users?.map((user: any) => (
+                  users?.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((user: any) => (
                     <TableRow key={user.id} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                       <TableCell className="pl-6 font-medium text-slate-900 dark:text-white">
                         {user.name}
@@ -209,6 +212,14 @@ export default function AdminUsersPage() {
                 )}
               </TableBody>
             </Table>
+          )}
+          
+          {users && users.length > 0 && (
+            <PaginationControl 
+              currentPage={page}
+              totalPages={Math.ceil(users.length / itemsPerPage)}
+              onPageChange={setPage}
+            />
           )}
         </CardContent>
       </Card>

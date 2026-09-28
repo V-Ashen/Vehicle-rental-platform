@@ -24,7 +24,7 @@ export class BranchController {
     const userId = (req as any).ownerUser?.id || (req as any).staffUser?.id;
     const { id } = req.params;
 
-    const result = await branchService.updateBranch(tenantId, userId, id, req.body);
+    const result = await branchService.updateBranch(tenantId, userId, id as string, req.body);
     res.status(200).json({ success: true, data: result });
   }
 
@@ -33,7 +33,7 @@ export class BranchController {
     const userId = (req as any).ownerUser?.id || (req as any).staffUser?.id;
     const { id } = req.params;
 
-    const result = await branchService.deleteBranch(tenantId, userId, id);
+    const result = await branchService.deleteBranch(tenantId, userId, id as string);
     res.status(200).json({ success: true, data: result });
   }
 }

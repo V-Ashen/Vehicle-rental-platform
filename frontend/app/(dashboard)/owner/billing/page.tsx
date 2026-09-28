@@ -18,9 +18,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import UpgradeModal from "@/components/owner/billing/UpgradeModal";
 import { parseFirestoreDate } from "@/lib/dateUtils";
+import { PaginationControl } from '@/components/ui/pagination-control';
 
 export default function BillingDashboardPage() {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data: subscriptionData, isLoading: subLoading } = useQuery({
     queryKey: ["owner-subscription"],
@@ -204,7 +207,7 @@ export default function BillingDashboardPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                payments.map((payment: any, index: number) => (
+                payments.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((payment: any, index: number) => (
                   <TableRow key={`${payment.id}-${index}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                     <TableCell className="font-medium text-slate-900 dark:text-white">
                       {format(parseFirestoreDate(payment.date), "MMM d, yyyy")}
@@ -242,6 +245,14 @@ export default function BillingDashboardPage() {
             </TableBody>
           </Table>
         </div>
+        
+        {payments && payments.length > 0 && (
+          <PaginationControl 
+            currentPage={page}
+            totalPages={Math.ceil(payments.length / itemsPerPage)}
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       <UpgradeModal 

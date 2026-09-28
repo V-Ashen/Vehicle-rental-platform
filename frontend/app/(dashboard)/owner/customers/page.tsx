@@ -15,11 +15,14 @@ import {
 import { CustomerFormModal } from "@/components/owner/customers/CustomerFormModal";
 import { Edit2, Plus, Users, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { PaginationControl } from '@/components/ui/pagination-control';
 
 export default function CustomersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data: responseData, isLoading } = useQuery({
     queryKey: ["owner-customers"],
@@ -109,7 +112,7 @@ export default function CustomersPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredCustomers.map((customer: any) => (
+                filteredCustomers.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((customer: any) => (
                   <TableRow key={customer.id}>
                     <TableCell className="font-medium text-slate-900 dark:text-white">
                       {customer.fullName}
@@ -138,6 +141,14 @@ export default function CustomersPage() {
             </TableBody>
           </Table>
         </div>
+        
+        {filteredCustomers && filteredCustomers.length > 0 && (
+          <PaginationControl 
+            currentPage={page}
+            totalPages={Math.ceil(filteredCustomers.length / itemsPerPage)}
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       <CustomerFormModal 

@@ -21,12 +21,15 @@ import { useRouter } from "next/navigation";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { PaginationControl } from '@/components/ui/pagination-control';
 
 export default function RentalsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data: responseData, isLoading } = useQuery({
     queryKey: ["owner-rentals"],
@@ -155,7 +158,7 @@ export default function RentalsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredRentals.map((rental: any) => (
+                filteredRentals.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((rental: any) => (
                   <TableRow 
                     key={rental.id}
                     className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
@@ -257,6 +260,14 @@ export default function RentalsPage() {
             </TableBody>
           </Table>
         </div>
+        
+        {filteredRentals && filteredRentals.length > 0 && (
+          <PaginationControl 
+            currentPage={page}
+            totalPages={Math.ceil(filteredRentals.length / itemsPerPage)}
+            onPageChange={setPage}
+          />
+        )}
       </div>
     </div>
   );

@@ -23,6 +23,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "cn";
 import { useToast } from "@/hooks/use-toast";
+import { PaginationControl } from '@/components/ui/pagination-control';
 
 export default function ReportsDashboardPage() {
   const { toast } = useToast();
@@ -34,6 +35,8 @@ export default function ReportsDashboardPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [branchFilter, setBranchFilter] = useState<string>("all");
   const [vehicleFilter, setVehicleFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   const startDateStr = date?.from ? date.from.toISOString() : "";
   const endDateStr = date?.to ? endOfDay(date.to).toISOString() : "";
@@ -282,7 +285,7 @@ export default function ReportsDashboardPage() {
                       </TableCell>
                     </TableRow>
                   ) : detailedData?.length > 0 ? (
-                    detailedData.map((row: any) => (
+                    detailedData.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((row: any) => (
                       <TableRow key={row.id}>
                         <TableCell className="font-medium text-indigo-600 dark:text-indigo-400">{row.id}</TableCell>
                         <TableCell>{row.vehicleName}</TableCell>
@@ -308,6 +311,14 @@ export default function ReportsDashboardPage() {
                   )}
                 </TableBody>
               </Table>
+              
+              {detailedData && detailedData.length > 0 && (
+                <PaginationControl 
+                  currentPage={page}
+                  totalPages={Math.ceil(detailedData.length / itemsPerPage)}
+                  onPageChange={setPage}
+                />
+              )}
             </div>
           </div>
         </>
