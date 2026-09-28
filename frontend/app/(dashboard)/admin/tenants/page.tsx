@@ -16,12 +16,15 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, ShieldAlert, CheckCircle } from "lucide-react";
 import { TenantActionModal } from "@/components/admin/tenants/TenantActionModal";
+import { PaginationControl } from '@/components/ui/pagination-control';
 
 export default function TenantsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [selectedTenant, setSelectedTenant] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data: tenants, isLoading } = useQuery({
     queryKey: ["admin-tenants"],
@@ -91,7 +94,7 @@ export default function TenantsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              tenants?.map((tenant: any) => (
+              tenants?.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((tenant: any) => (
                 <TableRow key={tenant.id}>
                   <TableCell className="font-medium">
                     <p className="text-slate-900 dark:text-white">{tenant.businessName}</p>
@@ -114,6 +117,14 @@ export default function TenantsPage() {
             )}
           </TableBody>
         </Table>
+        
+        {tenants && tenants.length > 0 && (
+          <PaginationControl 
+            currentPage={page}
+            totalPages={Math.ceil(tenants.length / itemsPerPage)}
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       <TenantActionModal 

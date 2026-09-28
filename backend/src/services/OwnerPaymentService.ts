@@ -64,6 +64,7 @@ export class OwnerPaymentService {
           
           if (rentalDoc.exists && rentalDoc.data()?.tenantId === tenantId) {
             const rental = rentalDoc.data();
+            if (!rental) throw new AppError('Rental data not found', 'NOT_FOUND', 404);
             const currentBalance = rental.balanceDue ?? rental.totalAmount ?? 0;
             const newBalance = Math.max(0, currentBalance - data.amount);
             

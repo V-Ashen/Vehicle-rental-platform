@@ -49,7 +49,7 @@ export class AdminDashboardService {
         type: 'TENANT',
         title: 'New Business Registered',
         description: `${t.businessName} has registered.`,
-        timestamp: t.createdAt?.toDate ? t.createdAt.toDate().toISOString() : t.createdAt,
+        timestamp: (t.createdAt as any)?.toDate ? (t.createdAt as any).toDate().toISOString() : t.createdAt,
         status: t.accountStatus
       })),
       ...prs.map(p => ({
@@ -57,7 +57,7 @@ export class AdminDashboardService {
         type: 'PAYMENT_REQUEST',
         title: 'Payment Request Updated',
         description: `Payment request for ${p.tenantId} is ${p.status}.`,
-        timestamp: p.createdAt?.toDate ? p.createdAt.toDate().toISOString() : p.createdAt,
+        timestamp: (p.createdAt as any)?.toDate ? (p.createdAt as any).toDate().toISOString() : p.createdAt,
         status: p.status
       }))
     ];

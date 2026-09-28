@@ -18,10 +18,13 @@ import { parseFirestoreDate } from "@/lib/dateUtils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LogMaintenanceModal from "@/components/owner/maintenance/LogMaintenanceModal";
+import { PaginationControl } from '@/components/ui/pagination-control';
 
 export default function MaintenancePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data: records, isLoading } = useQuery({
     queryKey: ["owner-maintenance"],
@@ -116,7 +119,7 @@ export default function MaintenancePage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredRecords.map((record: any) => (
+                filteredRecords.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((record: any) => (
                   <TableRow 
                     key={record.id}
                     className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
@@ -163,6 +166,14 @@ export default function MaintenancePage() {
             </TableBody>
           </Table>
         </div>
+        
+        {filteredRecords && filteredRecords.length > 0 && (
+          <PaginationControl 
+            currentPage={page}
+            totalPages={Math.ceil(filteredRecords.length / itemsPerPage)}
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       <LogMaintenanceModal 

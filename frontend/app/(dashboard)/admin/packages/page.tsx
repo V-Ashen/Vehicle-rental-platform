@@ -15,11 +15,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { PackageFormModal } from "@/components/admin/packages/PackageFormModal";
 import { Edit2, Plus } from "lucide-react";
+import { PaginationControl } from '@/components/ui/pagination-control';
 
 export default function PackagesPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPackage, setEditingPackage] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Fetch Packages
   const { data: packages, isLoading } = useQuery({
@@ -85,7 +88,7 @@ export default function PackagesPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              packages?.map((pkg: any) => (
+              packages?.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((pkg: any) => (
                 <TableRow key={pkg.id}>
                   <TableCell className="font-medium">
                     <p className="text-slate-900 dark:text-white">{pkg.name}</p>
@@ -123,6 +126,14 @@ export default function PackagesPage() {
             )}
           </TableBody>
         </Table>
+        
+        {packages && packages.length > 0 && (
+          <PaginationControl 
+            currentPage={page}
+            totalPages={Math.ceil(packages.length / itemsPerPage)}
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       <PackageFormModal 

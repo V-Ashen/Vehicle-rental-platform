@@ -34,6 +34,10 @@ export class WebhookService {
         }
 
         const payment = paymentDoc.data();
+        if (!payment) {
+          console.warn(`Payment data is empty for paymentId: ${paymentId}`);
+          return;
+        }
 
         // **IDEMPOTENCY LOCK**
         if (payment?.status === 'SUCCESS') {
