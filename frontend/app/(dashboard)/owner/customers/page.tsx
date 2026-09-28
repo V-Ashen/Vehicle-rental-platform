@@ -4,18 +4,27 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CustomerFormModal } from "@/components/owner/customers/CustomerFormModal";
-import { Edit2, Plus, Users, Search } from "lucide-react";
+import { Edit2, Plus, Users, Search, Phone, Mail } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { PaginationControl } from '@/components/ui/pagination-control';
+import { PaginationControl } from "@/components/ui/pagination-control";
+
+function CustomerAvatar({ name }: { name: string }) {
+  const colors = [
+    "from-indigo-500 to-violet-600",
+    "from-emerald-500 to-teal-600",
+    "from-rose-500 to-pink-600",
+    "from-amber-500 to-orange-600",
+    "from-sky-500 to-blue-600",
+  ];
+  const color = colors[name.charCodeAt(0) % colors.length];
+  return (
+    <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
+}
 
 export default function CustomersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,105 +43,127 @@ export default function CustomersPage() {
 
   const customers = Array.isArray(responseData) ? responseData : (responseData?.data || []);
 
-  const filteredCustomers = customers.filter((customer: any) => 
-    customer.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.nicPassport.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.mobile.includes(searchQuery)
+  const filteredCustomers = customers.filter((c: any) =>
+    c.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.nicPassport?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.mobile?.includes(searchQuery) ||
+    c.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleCreate = () => {
-    setEditingCustomer(null);
-    setIsModalOpen(true);
-  };
+  const paged = filteredCustomers.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
-  const handleEdit = (customer: any) => {
-    setEditingCustomer(customer);
-    setIsModalOpen(true);
-  };
+  const handleCreate = () => { setEditingCustomer(null); setIsModalOpen(true); };
+  const handleEdit = (c: any) => { setEditingCustomer(c); setIsModalOpen(true); };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center">
-            <Users className="w-8 h-8 mr-3 text-indigo-600" />
-            Customers
-          </h1>
-          <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Manage your rental customers and their information.
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Customers</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            {customers.length} registered customer{customers.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Button onClick={handleCreate} className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">
-          <Plus className="w-4 h-4 mr-2" />
+        <Button onClick={handleCreate} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+          <Plus className="w-4 h-4" />
           Add Customer
         </Button>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-          <div className="relative max-w-md">
+      {/* Table card */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+          <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder="Search by name, NIC, or mobile..." 
+            <Input
+              placeholder="Search name, NIC, mobile, email…"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-white dark:bg-slate-900"
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+              className="pl-9 h-9 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
             />
           </div>
         </div>
-        
-        {/* Horizontal scroll wrapper for mobile */}
+
         <div className="overflow-x-auto">
-          <Table className="w-full whitespace-nowrap">
-            <TableHeader className="bg-slate-50 dark:bg-slate-800">
-              <TableRow>
-                <TableHead>Customer Name</TableHead>
-                <TableHead>Contact Info</TableHead>
-                <TableHead>NIC / Passport</TableHead>
-                <TableHead>Address</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50/80 dark:bg-slate-800/40 hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Contact</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">NIC / Passport</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Address</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <TableCell key={j}><div className="h-4 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" /></TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : paged.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
-                      <p className="text-slate-500">Loading customers...</p>
+                  <TableCell colSpan={5} className="text-center py-16">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                        <Users className="w-7 h-7 text-slate-400" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900 dark:text-white">No customers found</p>
+                        <p className="text-sm text-slate-500 mt-0.5">
+                          {searchQuery ? "Try a different search" : "Add your first customer to get started"}
+                        </p>
+                      </div>
+                      {!searchQuery && (
+                        <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 gap-2" onClick={handleCreate}>
+                          <Plus className="w-4 h-4" /> Add Customer
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : filteredCustomers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12 text-slate-500">
-                    <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <p className="text-lg font-medium text-slate-900 dark:text-white mb-1">No customers found</p>
-                    <p>Get started by adding your first customer.</p>
-                  </TableCell>
-                </TableRow>
               ) : (
-                filteredCustomers.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((customer: any) => (
-                  <TableRow key={customer.id}>
-                    <TableCell className="font-medium text-slate-900 dark:text-white">
-                      {customer.fullName}
-                    </TableCell>
+                paged.map((customer: any) => (
+                  <TableRow key={customer.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors border-slate-100 dark:border-slate-800">
                     <TableCell>
-                      <div className="text-sm">
-                        <p className="text-slate-900 dark:text-slate-200">{customer.mobile}</p>
-                        {customer.email && <p className="text-slate-500">{customer.email}</p>}
+                      <div className="flex items-center gap-3">
+                        <CustomerAvatar name={customer.fullName || "?"} />
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900 dark:text-white">{customer.fullName}</p>
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-slate-600 dark:text-slate-400">
-                      {customer.nicPassport}
+                    <TableCell>
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-300">
+                          <Phone className="w-3 h-3 text-slate-400" />
+                          {customer.mobile}
+                        </div>
+                        {customer.email && (
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                            <Mail className="w-3 h-3 text-slate-400" />
+                            {customer.email}
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell className="text-slate-600 dark:text-slate-400 max-w-[200px] truncate">
-                      {customer.address}
+                    <TableCell>
+                      <span className="font-mono text-xs text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg">
+                        {customer.nicPassport}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 max-w-[200px] truncate" title={customer.address}>
+                        {customer.address || "—"}
+                      </p>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(customer)}>
-                        <Edit2 className="w-4 h-4 mr-2" />
-                        Edit
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-slate-500" onClick={() => handleEdit(customer)}>
+                        <Edit2 className="w-3.5 h-3.5" /> Edit
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -141,21 +172,13 @@ export default function CustomersPage() {
             </TableBody>
           </Table>
         </div>
-        
-        {filteredCustomers && filteredCustomers.length > 0 && (
-          <PaginationControl 
-            currentPage={page}
-            totalPages={Math.ceil(filteredCustomers.length / itemsPerPage)}
-            onPageChange={setPage}
-          />
+
+        {filteredCustomers.length > itemsPerPage && (
+          <PaginationControl currentPage={page} totalPages={Math.ceil(filteredCustomers.length / itemsPerPage)} onPageChange={setPage} />
         )}
       </div>
 
-      <CustomerFormModal 
-        isOpen={isModalOpen} 
-        setIsOpen={setIsModalOpen} 
-        initialData={editingCustomer} 
-      />
+      <CustomerFormModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} initialData={editingCustomer} />
     </div>
   );
 }

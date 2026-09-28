@@ -148,7 +148,12 @@ export default function Step3Settlement({ rentalData }: Step3SettlementProps) {
                   Add any other custom fees such as extreme cleaning, missing accessories, or fuel penalties.
                 </div>
                 <FormControl>
-                  <Input type="number" placeholder="0" {...field} />
+                  <Input 
+                    type="number" 
+                    placeholder="0" 
+                    value={field.value === 0 ? "" : field.value}
+                    onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number(e.target.value))}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

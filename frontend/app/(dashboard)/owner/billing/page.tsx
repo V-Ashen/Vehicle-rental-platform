@@ -4,21 +4,43 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 import { format } from "date-fns";
-import { CreditCard, Download, ExternalLink, Calendar, Zap, AlertCircle } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { CreditCard, Download, ExternalLink, Calendar, Zap, AlertCircle, CheckCircle2, Car, Users, Building2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import UpgradeModal from "@/components/owner/billing/UpgradeModal";
 import { parseFirestoreDate } from "@/lib/dateUtils";
-import { PaginationControl } from '@/components/ui/pagination-control';
+import { PaginationControl } from "@/components/ui/pagination-control";
+import { cn } from "cn";
+
+function StatusPill({ status }: { status: string }) {
+  const config: Record<string, string> = {
+    ACTIVE:   "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50",
+    SUCCESS:  "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50",
+    APPROVED: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50",
+    TRIAL:    "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800/50",
+    PENDING:  "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800/50",
+    EXPIRED:  "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800/50",
+    FAILED:   "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800/50",
+    REJECTED: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800/50",
+  };
+  return (
+    <span className={cn("inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold border", config[status] || "bg-slate-100 text-slate-600 border-slate-200")}>
+      {status}
+    </span>
+  );
+}
+
+function LimitCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: string; color: string }) {
+  return (
+    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-5 border border-slate-100 dark:border-slate-800">
+      <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center mb-3", color)}>
+        <Icon className="w-4 h-4 text-white" />
+      </div>
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
+    </div>
+  );
+}
 
 export default function BillingDashboardPage() {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
@@ -41,202 +63,183 @@ export default function BillingDashboardPage() {
     },
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "ACTIVE":
-      case "SUCCESS":
-      case "APPROVED":
-        return <Badge className="bg-emerald-100 text-emerald-800 border-transparent">{status}</Badge>;
-      case "TRIAL":
-      case "PENDING":
-        return <Badge className="bg-amber-100 text-amber-800 border-transparent">{status}</Badge>;
-      case "EXPIRED":
-      case "FAILED":
-      case "REJECTED":
-        return <Badge className="bg-red-100 text-red-800 border-transparent">{status}</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  const getMethodBadge = (method: string) => {
-    if (method === "ONLINE") return <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">Online Card</Badge>;
-    if (method === "BANK_TRANSFER") return <Badge variant="outline" className="text-indigo-600 border-indigo-200 bg-indigo-50">Bank Transfer</Badge>;
-    return <Badge variant="outline">{method}</Badge>;
-  };
+  const paged = (payments || []).slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   return (
     <div className="space-y-6 pb-12">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center">
-            <CreditCard className="w-6 h-6 mr-2 text-indigo-600" />
-            Billing & Subscriptions
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Manage your subscription plan, view limits, and download payment history.
-          </p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Billing & Subscription</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Manage your plan, limits, and payment history.</p>
         </div>
-        <Button onClick={() => setIsUpgradeModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700">
-          <Zap className="w-4 h-4 mr-2" />
-          Renew / Upgrade Plan
+        <Button onClick={() => setIsUpgradeModalOpen(true)} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+          <Zap className="w-4 h-4" /> Renew / Upgrade
         </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+        {/* Current plan card */}
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 relative overflow-hidden">
           {subscriptionData?.status === "TRIAL" && (
-            <div className="absolute top-0 right-0 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
+            <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-bl-xl">
               TRIAL PERIOD
             </div>
           )}
-          <CardHeader>
-            <CardTitle>Current Plan Overview</CardTitle>
-            <CardDescription>Your current package details and platform limits.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {subLoading ? (
-              <div className="animate-pulse flex space-x-4">
-                <div className="flex-1 space-y-4 py-1">
-                  <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-                  <div className="space-y-2">
-                    <div className="h-4 bg-slate-200 rounded"></div>
-                    <div className="h-4 bg-slate-200 rounded w-5/6"></div>
-                  </div>
-                </div>
-              </div>
-            ) : !subscriptionData ? (
-              <div className="text-center py-6">
-                <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-                <p className="text-slate-900 font-medium">No Active Subscription Found</p>
-                <p className="text-slate-500 text-sm">Please renew or upgrade your plan to continue using the platform.</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-                  <div>
-                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
-                      {subscriptionData.package?.name || "Unknown Package"}
-                    </h3>
-                    <div className="flex items-center mt-1 text-sm text-slate-500">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      Started on {format(parseFirestoreDate(subscriptionData.trialStartAt || subscriptionData.createdAt), "MMM d, yyyy")}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    {getStatusBadge(subscriptionData.status)}
-                    <p className="text-xs text-slate-500 mt-2">
-                      {subscriptionData.status === "TRIAL" ? "Trial ends " : "Renews on "}
-                      {format(parseFirestoreDate(subscriptionData.trialEndAt || subscriptionData.updatedAt), "MMM d, yyyy")}
-                    </p>
-                  </div>
-                </div>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">Current Plan</h2>
+          <p className="text-sm text-slate-500 mb-6">Your active subscription package details.</p>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Vehicle Limit</p>
-                    <p className="text-xl font-bold text-slate-900 dark:text-white">
-                      {subscriptionData.package?.maxVehicles || 0} <span className="text-sm font-normal text-slate-500">max vehicles</span>
-                    </p>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Staff Limit</p>
-                    <p className="text-xl font-bold text-slate-900 dark:text-white">
-                      {subscriptionData.package?.maxUsers || 0} <span className="text-sm font-normal text-slate-500">max users</span>
-                    </p>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Branch Limit</p>
-                    <p className="text-xl font-bold text-slate-900 dark:text-white">
-                      {subscriptionData.package?.maxBranches || 1} <span className="text-sm font-normal text-slate-500">max branches</span>
-                    </p>
-                  </div>
-                </div>
+          {subLoading ? (
+            <div className="space-y-3 animate-pulse">
+              <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded-xl w-1/2" />
+              <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-xl w-1/3" />
+              <div className="grid grid-cols-3 gap-4 mt-6">
+                {[1, 2, 3].map(i => <div key={i} className="h-20 bg-slate-200 dark:bg-slate-800 rounded-2xl" />)}
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm bg-indigo-50 dark:bg-indigo-950/20 border-indigo-100 dark:border-indigo-900/30">
-          <CardHeader>
-            <CardTitle className="text-indigo-900 dark:text-indigo-300">Need more capacity?</CardTitle>
-            <CardDescription className="text-indigo-700/70 dark:text-indigo-400/70">
-              Upgrade your plan to unlock more vehicles, more staff accounts, and advanced analytics features.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => setIsUpgradeModalOpen(true)} className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 dark:shadow-none">
-              View Packages
-            </Button>
-            <div className="mt-4 text-xs text-center text-indigo-700/60 dark:text-indigo-400/60">
-              Changes take effect immediately.
             </div>
-          </CardContent>
-        </Card>
+          ) : !subscriptionData ? (
+            <div className="flex flex-col items-center py-8 text-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-amber-500" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900 dark:text-white">No active subscription</p>
+                <p className="text-sm text-slate-500 mt-0.5">Renew or upgrade to continue using the platform.</p>
+              </div>
+              <Button onClick={() => setIsUpgradeModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 gap-2">
+                <Zap className="w-4 h-4" /> View Plans
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="flex items-start justify-between flex-wrap gap-4">
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                    {subscriptionData.package?.name || "Unknown Package"}
+                  </h3>
+                  <div className="flex items-center gap-1.5 mt-1.5 text-sm text-slate-500">
+                    <Calendar className="w-4 h-4" />
+                    Started {format(parseFirestoreDate(subscriptionData.trialStartAt || subscriptionData.createdAt), "MMM d, yyyy")}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <StatusPill status={subscriptionData.status} />
+                  <p className="text-xs text-slate-500 mt-1.5">
+                    {subscriptionData.status === "TRIAL" ? "Trial ends " : "Renews on "}
+                    {format(parseFirestoreDate(subscriptionData.trialEndAt || subscriptionData.updatedAt), "MMM d, yyyy")}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <LimitCard icon={Car} label="Vehicles" value={`${subscriptionData.package?.maxVehicles || 0} max`} color="bg-indigo-500" />
+                <LimitCard icon={Users} label="Staff" value={`${subscriptionData.package?.maxUsers || 0} max`} color="bg-violet-500" />
+                <LimitCard icon={Building2} label="Branches" value={`${subscriptionData.package?.maxBranches || 1} max`} color="bg-emerald-500" />
+              </div>
+
+              {subscriptionData.package?.features?.length > 0 && (
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Included Features</p>
+                  <div className="flex flex-wrap gap-2">
+                    {subscriptionData.package.features.map((f: string, i: number) => (
+                      <span key={i} className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/50">
+                        <CheckCircle2 className="w-3 h-3" /> {f}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Upgrade CTA */}
+        <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl p-6 text-white shadow-lg shadow-indigo-500/20 flex flex-col justify-between">
+          <div>
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center mb-4">
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="text-lg font-bold mb-2">Need more capacity?</h3>
+            <p className="text-sm text-indigo-200">
+              Upgrade your plan to unlock more vehicles, staff accounts, and advanced analytics.
+            </p>
+          </div>
+          <div className="mt-6 space-y-3">
+            <Button onClick={() => setIsUpgradeModalOpen(true)} className="w-full bg-white text-indigo-700 hover:bg-indigo-50 font-semibold">
+              View All Plans
+            </Button>
+            <p className="text-xs text-center text-indigo-300">Changes take effect immediately.</p>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-          <h3 className="text-lg font-medium text-slate-900 dark:text-white">Payment History</h3>
+      {/* Payment History */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white">Payment History</h2>
         </div>
-        
+
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Reference</TableHead>
-                <TableHead>Amount (Rs.)</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Receipt</TableHead>
+            <TableHeader>
+              <TableRow className="bg-slate-50/80 dark:bg-slate-800/40 hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                {["Date", "Reference", "Amount (Rs.)", "Method", "Status", "Receipt"].map(h => (
+                  <TableHead key={h} className={cn("text-xs font-semibold text-slate-500 uppercase tracking-wider", h === "Receipt" && "text-right")}>{h}</TableHead>
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
               {paymentsLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 6 }).map((_, j) => (
+                      <TableCell key={j}><div className="h-4 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" /></TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : paged.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto"></div>
-                  </TableCell>
-                </TableRow>
-              ) : !payments || payments.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-slate-500">
-                    <p className="font-medium text-slate-900 dark:text-white mb-1">No payment history</p>
-                    <p>You haven't made any payments yet.</p>
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2">
+                      <CreditCard className="w-8 h-8 text-slate-300" />
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">No payment history</p>
+                      <p className="text-sm text-slate-500">Your SaaS payments will appear here.</p>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                payments.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((payment: any, index: number) => (
-                  <TableRow key={`${payment.id}-${index}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                    <TableCell className="font-medium text-slate-900 dark:text-white">
-                      {format(parseFirestoreDate(payment.date), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell className="text-slate-500 text-xs font-mono">
-                      {payment.id}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {payment.amount.toLocaleString()}
+                paged.map((payment: any, index: number) => (
+                  <TableRow key={`${payment.id}-${index}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors border-slate-100 dark:border-slate-800">
+                    <TableCell>
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">
+                        {format(parseFirestoreDate(payment.date), "MMM d, yyyy")}
+                      </span>
                     </TableCell>
                     <TableCell>
-                      {getMethodBadge(payment.method)}
+                      <span className="font-mono text-xs text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg">{payment.id}</span>
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(payment.status)}
+                      <span className="text-sm font-bold text-slate-900 dark:text-white">Rs. {payment.amount?.toLocaleString()}</span>
                     </TableCell>
+                    <TableCell>
+                      <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                        {payment.method === "ONLINE" ? "Online Card" : payment.method === "BANK_TRANSFER" ? "Bank Transfer" : payment.method}
+                      </span>
+                    </TableCell>
+                    <TableCell><StatusPill status={payment.status} /></TableCell>
                     <TableCell className="text-right">
                       {payment.slipUrl ? (
                         <a href={payment.slipUrl} target="_blank" rel="noopener noreferrer">
-                          <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-800">
-                            <ExternalLink className="w-4 h-4 mr-1" /> View Slip
+                          <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700 h-8 gap-1">
+                            <ExternalLink className="w-3.5 h-3.5" /> View
                           </Button>
                         </a>
-                      ) : payment.status === 'SUCCESS' ? (
-                        <Button variant="ghost" size="sm" className="text-slate-500">
-                          <Download className="w-4 h-4 mr-1" /> Invoice
+                      ) : payment.status === "SUCCESS" ? (
+                        <Button variant="ghost" size="sm" className="text-slate-500 h-8 gap-1">
+                          <Download className="w-3.5 h-3.5" /> Invoice
                         </Button>
                       ) : (
-                        <span className="text-slate-400 text-sm">-</span>
+                        <span className="text-slate-400 text-sm">—</span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -245,20 +248,13 @@ export default function BillingDashboardPage() {
             </TableBody>
           </Table>
         </div>
-        
-        {payments && payments.length > 0 && (
-          <PaginationControl 
-            currentPage={page}
-            totalPages={Math.ceil(payments.length / itemsPerPage)}
-            onPageChange={setPage}
-          />
+
+        {(payments || []).length > itemsPerPage && (
+          <PaginationControl currentPage={page} totalPages={Math.ceil((payments || []).length / itemsPerPage)} onPageChange={setPage} />
         )}
       </div>
 
-      <UpgradeModal 
-        isOpen={isUpgradeModalOpen} 
-        onClose={() => setIsUpgradeModalOpen(false)} 
-      />
+      <UpgradeModal isOpen={isUpgradeModalOpen} onClose={() => setIsUpgradeModalOpen(false)} />
     </div>
   );
 }

@@ -62,25 +62,25 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleEmailLogin} className="space-y-6">
-      {error && <div className="text-red-500 text-sm font-medium text-center bg-red-50 py-2 rounded">{error}</div>}
+    <form onSubmit={handleEmailLogin} className="space-y-5">
+      {error && <div className="text-red-500 text-sm font-medium text-center bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 py-3 px-4 rounded-xl">{error}</div>}
       
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Email Address</label>
+      <div className="space-y-1.5">
+        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Email Address</label>
         <input 
           type="email" 
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+          className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 rounded-xl border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors dark:text-white"
           placeholder="you@company.com"
         />
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <div className="flex justify-between items-center">
-          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
-          <a href="/forgot-password" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+          <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Password</label>
+          <a href="/forgot-password" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">
             Forgot password?
           </a>
         </div>
@@ -89,7 +89,7 @@ export function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+          className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 rounded-xl border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors dark:text-white"
           placeholder="••••••••"
         />
       </div>
@@ -97,17 +97,22 @@ export function LoginForm() {
       <button 
         type="submit" 
         disabled={loading}
-        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
+        className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg shadow-indigo-500/20 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all mt-6"
       >
-        {loading ? 'Signing in...' : 'Sign in'}
+        {loading ? (
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            Signing in...
+          </div>
+        ) : 'Sign in'}
       </button>
 
-      <div className="relative">
+      <div className="relative mt-8 mb-6">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+          <div className="w-full border-t border-slate-200 dark:border-slate-800" />
         </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white dark:bg-slate-800 text-slate-500">Or continue with</span>
+        <div className="relative flex justify-center text-xs uppercase font-semibold tracking-wider">
+          <span className="px-3 bg-white dark:bg-slate-900 text-slate-400">Or continue with</span>
         </div>
       </div>
 
@@ -115,7 +120,7 @@ export function LoginForm() {
         type="button" 
         onClick={handleGoogleLogin}
         disabled={loading}
-        className="w-full flex justify-center items-center gap-3 py-3 px-4 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+        className="w-full flex justify-center items-center gap-3 py-3.5 px-4 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
           <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

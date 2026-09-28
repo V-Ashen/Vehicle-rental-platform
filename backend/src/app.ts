@@ -29,6 +29,7 @@ import reportRoutes from './routes/reports.routes';
 import paymentRoutes from './routes/payments.routes';
 import webhookRoutes from './routes/webhooks.routes';
 import cronRoutes from './routes/cron.routes';
+import notificationRoutes from './routes/notifications.routes';
 import { helmetConfig, authRateLimiter, globalRateLimiter } from './middlewares/securityMiddleware';
 
 const app = express();
@@ -71,7 +72,7 @@ app.use('/api/v1/rentals', rentalRoutes);
 app.use('/api/v1/maintenance', maintenanceRoutes);
 app.use('/api/v1/reports', reportRoutes);
 app.use('/api/v1/payments', paymentRoutes);
-
+app.use('/api/v1/notifications', notificationRoutes);
 // Health check
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'OK' });

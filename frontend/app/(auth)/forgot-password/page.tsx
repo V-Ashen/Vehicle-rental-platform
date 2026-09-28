@@ -49,27 +49,29 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center text-indigo-600">
-          <Car className="w-12 h-12" />
-        </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
-          Reset your password
-        </h2>
-        <p className="mt-2 text-center text-sm text-slate-600">
-          Or{" "}
-          <Link
-            href="/login"
-            className="font-medium text-indigo-600 hover:text-indigo-500"
-          >
-            sign in to your account
-          </Link>
-        </p>
-      </div>
+    <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      
+      {/* Premium Background Effects */}
+      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/20 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/20 blur-[120px] pointer-events-none" />
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <Card className="shadow-lg border-0">
+      <div className="w-full max-w-md p-8 sm:p-10 space-y-8 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-slate-200/50 dark:border-slate-800/50 relative z-10 mx-4">
+        <div className="text-center space-y-2">
+          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/25">
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+          </div>
+          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            Reset Password
+          </h2>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+            Enter your email to receive a reset link
+          </p>
+        </div>
+
+        <div className="mt-8">
+          <Card className="shadow-none border-0 bg-transparent">
           <CardHeader>
             <CardTitle>Forgot Password</CardTitle>
             <CardDescription>
@@ -113,7 +115,7 @@ export default function ForgotPasswordPage() {
 
                   <Button
                     type="submit"
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 h-11"
+                    className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg shadow-indigo-500/20 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all mt-6 h-auto"
                     disabled={isLoading}
                   >
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -123,8 +125,8 @@ export default function ForgotPasswordPage() {
               </Form>
             )}
           </CardContent>
-          <CardFooter className="justify-center border-t py-4">
-            <Link href="/login" className="flex items-center text-sm font-medium text-slate-600 hover:text-slate-900">
+          <CardFooter className="justify-center pt-4 pb-0">
+            <Link href="/login" className="flex items-center text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to login
             </Link>

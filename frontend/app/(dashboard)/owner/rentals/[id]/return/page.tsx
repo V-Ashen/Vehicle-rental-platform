@@ -153,6 +153,7 @@ export default function ReturnRentalWizardPage({ params }: { params: Promise<{ i
       queryClient.invalidateQueries({ queryKey: ["owner-rentals"] });
       queryClient.invalidateQueries({ queryKey: ["owner-rental", rentalId] });
       queryClient.invalidateQueries({ queryKey: ["owner-vehicles"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
       
       toast({
         title: "Return Processed!",

@@ -1,61 +1,156 @@
 "use client";
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  LayoutDashboard,
+  Building2,
+  Package,
+  CreditCard,
+  History,
+  Mail,
+  Settings,
+  Users,
+  ChevronRight,
+  ShieldCheck,
+  X,
+} from 'lucide-react';
+import { cn } from 'cn';
 
-export function AdminSidebar({ currentPath }: { currentPath: string }) {
+const navGroups = [
+  {
+    label: 'Overview',
+    links: [
+      { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'FINANCE_ADMIN', 'SUPPORT_ADMIN', 'OPERATIONS_ADMIN'] },
+    ],
+  },
+  {
+    label: 'Tenants',
+    links: [
+      { name: 'Rental Businesses', href: '/admin/tenants', icon: Building2, roles: ['SUPER_ADMIN', 'SUPPORT_ADMIN'] },
+    ],
+  },
+  {
+    label: 'Monetization',
+    links: [
+      { name: 'Packages', href: '/admin/packages', icon: Package, roles: ['SUPER_ADMIN', 'FINANCE_ADMIN'] },
+      { name: 'Payment Requests', href: '/admin/payment-requests', icon: CreditCard, roles: ['SUPER_ADMIN', 'FINANCE_ADMIN'] },
+      { name: 'Payment History', href: '/admin/payments', icon: History, roles: ['SUPER_ADMIN', 'FINANCE_ADMIN'] },
+    ],
+  },
+  {
+    label: 'System',
+    links: [
+      { name: 'Emails', href: '/admin/emails', icon: Mail, roles: ['SUPER_ADMIN'] },
+      { name: 'Settings', href: '/admin/settings', icon: Settings, roles: ['SUPER_ADMIN'] },
+      { name: 'SaaS Staff', href: '/admin/users', icon: Users, roles: ['SUPER_ADMIN'] },
+    ],
+  },
+];
+
+interface AdminSidebarProps {
+  currentPath: string;
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function AdminSidebar({ currentPath, isOpen = true, onClose }: AdminSidebarProps) {
   const { dbUser } = useAuth();
-  
-  const allLinks = [
-    { name: 'Dashboard', href: '/admin/dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', roles: ['SUPER_ADMIN', 'FINANCE_ADMIN', 'SUPPORT_ADMIN', 'OPERATIONS_ADMIN'] },
-    { name: 'Rental Businesses', href: '/admin/tenants', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', roles: ['SUPER_ADMIN', 'SUPPORT_ADMIN'] },
-    { name: 'Packages', href: '/admin/packages', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', roles: ['SUPER_ADMIN', 'FINANCE_ADMIN'] },
-    { name: 'Payment Requests', href: '/admin/payment-requests', icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z', roles: ['SUPER_ADMIN', 'FINANCE_ADMIN'] },
-    { name: 'Payment History', href: '/admin/payments', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4', roles: ['SUPER_ADMIN', 'FINANCE_ADMIN'] },
-    { name: 'Emails', href: '/admin/emails', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', roles: ['SUPER_ADMIN'] },
-    { name: 'Settings', href: '/admin/settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z', roles: ['SUPER_ADMIN'] },
-    { name: 'SaaS Staff', href: '/admin/users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z', roles: ['SUPER_ADMIN'] }
-  ];
-
-  const currentRole = dbUser?.saasRole || 'SUPER_ADMIN'; // Fallback to SUPER_ADMIN if old data
-  
-  const links = allLinks.filter(link => link.roles.includes(currentRole));
+  const currentRole = dbUser?.saasRole || 'SUPER_ADMIN';
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 flex-shrink-0 hidden md:flex flex-col border-r border-slate-800 transition-all duration-300">
-      <div className="h-16 flex items-center px-6 border-b border-slate-800">
-        <span className="text-xl font-bold text-white tracking-tight">SaaS Admin</span>
-      </div>
-      <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
-        {links.map((link) => {
-          const isActive = currentPath.startsWith(link.href);
-          return (
-            <Link 
-              key={link.name} 
-              href={link.href}
-              className={`flex items-center px-3 py-3 rounded-lg transition-colors group ${
-                isActive 
-                  ? 'bg-indigo-600 text-white shadow-md' 
-                  : 'hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <svg className={`w-5 h-5 mr-3 flex-shrink-0 ${isActive ? 'text-indigo-200' : 'text-slate-400 group-hover:text-slate-300'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={link.icon} />
-              </svg>
-              <span className="font-medium text-sm">{link.name}</span>
-            </Link>
-          );
-        })}
-      </nav>
-      <div className="p-4 border-t border-slate-800">
-        <div className="bg-slate-800 rounded-lg p-4">
-          <p className="text-xs text-slate-400">System Status</p>
-          <div className="flex items-center mt-2">
-            <div className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></div>
-            <span className="text-sm font-medium text-white">All systems operational</span>
+    <>
+      {isOpen && onClose && (
+        <div className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40" onClick={onClose} />
+      )}
+
+      <aside className={cn(
+        "fixed md:static inset-y-0 left-0 z-50 w-64 flex flex-col transition-transform duration-300",
+        "bg-slate-950 border-r border-slate-800/50",
+        isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+      )}>
+        {/* Logo */}
+        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800/50 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg shadow-rose-500/30">
+              <ShieldCheck className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <span className="text-sm font-bold text-white tracking-tight block leading-tight">SaaS Admin</span>
+              <span className="text-[10px] text-slate-500 uppercase tracking-widest">Control Panel</span>
+            </div>
+          </div>
+          {onClose && (
+            <button onClick={onClose} className="md:hidden p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-slate-800 transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
+          {navGroups.map((group) => {
+            const visibleLinks = group.links.filter(link => link.roles.includes(currentRole));
+            if (visibleLinks.length === 0) return null;
+
+            return (
+              <div key={group.label}>
+                <p className="px-3 mb-2 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
+                  {group.label}
+                </p>
+                <div className="space-y-0.5">
+                  {visibleLinks.map((link) => {
+                    const isActive = currentPath === link.href || currentPath.startsWith(link.href + '/');
+                    const Icon = link.icon;
+                    return (
+                      <Link
+                        key={link.name}
+                        href={link.href}
+                        onClick={onClose}
+                        className={cn(
+                          "flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-150 group text-sm font-medium border",
+                          isActive
+                            ? "bg-rose-500/15 text-rose-400 border-rose-500/20"
+                            : "text-slate-400 hover:text-white hover:bg-slate-800/60 border-transparent"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "w-7 h-7 rounded-lg flex items-center justify-center transition-colors shrink-0",
+                            isActive ? "bg-rose-500/20" : "bg-slate-800/50 group-hover:bg-slate-700/50"
+                          )}>
+                            <Icon className={cn(
+                              "w-3.5 h-3.5",
+                              isActive ? "text-rose-400" : "text-slate-400 group-hover:text-slate-200"
+                            )} />
+                          </div>
+                          <span>{link.name}</span>
+                        </div>
+                        {isActive && <ChevronRight className="w-3.5 h-3.5 text-rose-400/60" />}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* System status footer */}
+        <div className="p-3 border-t border-slate-800/50 shrink-0">
+          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800/50">
+            <div className="relative shrink-0">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-50" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-white">All systems operational</p>
+              <p className="text-[10px] text-slate-500">{currentRole.replace('_', ' ')}</p>
+            </div>
           </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }

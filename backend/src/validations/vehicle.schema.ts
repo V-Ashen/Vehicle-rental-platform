@@ -41,6 +41,12 @@ export const updateVehicleSchema = z.object({
     seats: z.number().int().min(1).optional(),
     colour: z.string().optional(),
     imageUrl: z.string().url().optional(),
-    status: z.enum(['AVAILABLE', 'RESERVED', 'ON_RENT', 'MAINTENANCE']).optional()
+    status: z.enum(['AVAILABLE', 'RESERVED', 'ON_RENT', 'MAINTENANCE', 'INACTIVE']).optional(),
+    trackedParts: z.array(z.object({
+      partName: z.string(),
+      replacedAtOdometer: z.number(),
+      lifespanKm: z.number(),
+      alertTriggered: z.boolean().default(false)
+    })).optional()
   })
 });

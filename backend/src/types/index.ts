@@ -164,6 +164,14 @@ export interface Vehicle extends BaseEntity {
   seats?: number;
   colour?: string;
   imageUrl?: string;
+  
+  // Maintenance Tracking
+  trackedParts?: Array<{
+    partName: string;
+    replacedAtOdometer: number;
+    lifespanKm: number;
+    alertTriggered: boolean;
+  }>;
 }
 
 export interface Rental extends BaseEntity {
@@ -263,6 +271,8 @@ export interface Notification extends BaseEntity {
   subject: string;
   message: string;
   status: 'QUEUED' | 'SENT' | 'FAILED';
+  isRead?: boolean;
+  readAt?: Date | null;
 }
 
 export interface Branch extends BaseEntity {
