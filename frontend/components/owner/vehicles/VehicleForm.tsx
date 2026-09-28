@@ -28,20 +28,20 @@ const formSchema = z.object({
   registrationNumber: z.string().min(2, "Registration number is required."),
   make: z.string().min(2, "Make is required."),
   model: z.string().min(1, "Model is required."),
-  year: z.coerce.number().int().min(1900).max(new Date().getFullYear() + 1),
+  year: z.number().int().min(1900).max(new Date().getFullYear() + 1),
   vehicleType: z.string().min(2, "Vehicle type is required."),
   transmission: z.enum(['AUTO', 'MANUAL']).optional(),
   fuelType: z.string().optional(),
-  seats: z.coerce.number().int().min(1).optional(),
+  seats: z.number().int().min(1).optional(),
   colour: z.string().optional(),
-  currentOdometer: z.coerce.number().min(0),
+  currentOdometer: z.number().min(0),
   
-  dailyRate: z.coerce.number().min(0, "Daily rate is required"),
-  weeklyRate: z.coerce.number().min(0).optional(),
-  monthlyRate: z.coerce.number().min(0).optional(),
-  extraKmRate: z.coerce.number().min(0),
-  includedKmPerDay: z.coerce.number().min(0),
-  depositAmount: z.coerce.number().min(0),
+  dailyRate: z.number().min(0, "Daily rate is required"),
+  weeklyRate: z.number().min(0).optional(),
+  monthlyRate: z.number().min(0).optional(),
+  extraKmRate: z.number().min(0),
+  includedKmPerDay: z.number().min(0),
+  depositAmount: z.number().min(0),
 });
 
 type VehicleFormProps = {
@@ -59,7 +59,7 @@ export function VehicleForm({ initialData }: VehicleFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       registrationNumber: initialData?.registrationNumber || "",
       make: initialData?.make || "",
@@ -159,7 +159,7 @@ export function VehicleForm({ initialData }: VehicleFormProps) {
     <div className="max-w-4xl mx-auto">
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-8">
             
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-8">

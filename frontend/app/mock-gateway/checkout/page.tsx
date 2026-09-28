@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Loader2, CheckCircle2, XCircle, CreditCard, ShieldCheck } from "lucide-
 import { apiClient } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
-export default function MockGatewayCheckoutPage() {
+function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -126,5 +126,13 @@ export default function MockGatewayCheckoutPage() {
         )}
       </Card>
     </div>
+  );
+}
+
+export default function MockGatewayCheckoutPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>}>
+      <CheckoutContent />
+    </Suspense>
   );
 }

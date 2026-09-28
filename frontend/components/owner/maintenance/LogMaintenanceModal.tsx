@@ -42,9 +42,9 @@ const maintenanceSchema = z.object({
   vehicleId: z.string().min(1, "Vehicle is required"),
   maintenanceType: z.enum(["SERVICE", "REPAIR", "INSPECTION"]),
   description: z.string().min(1, "Description is required"),
-  serviceDate: z.date({ required_error: "Service date is required" }),
-  odometer: z.coerce.number().min(0, "Odometer must be positive"),
-  cost: z.coerce.number().min(0, "Cost must be positive"),
+  serviceDate: z.date(),
+  odometer: z.number().min(0, "Odometer must be positive"),
+  cost: z.number().min(0, "Cost must be positive"),
   markVehicleAvailable: z.boolean().default(false),
 });
 
@@ -68,7 +68,7 @@ export default function LogMaintenanceModal({ isOpen, onClose }: LogMaintenanceM
   });
 
   const form = useForm<MaintenanceFormValues>({
-    resolver: zodResolver(maintenanceSchema),
+    resolver: zodResolver(maintenanceSchema) as any,
     defaultValues: {
       vehicleId: "",
       maintenanceType: "SERVICE",
@@ -122,7 +122,7 @@ export default function LogMaintenanceModal({ isOpen, onClose }: LogMaintenanceM
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-6">
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
@@ -202,7 +202,6 @@ export default function LogMaintenanceModal({ isOpen, onClose }: LogMaintenanceM
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          initialFocus
                         />
                       </PopoverContent>
                     </Popover>

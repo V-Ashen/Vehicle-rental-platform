@@ -22,9 +22,9 @@ import { Loader2, Save } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const rentalRulesSchema = z.object({
-  gracePeriodMinutes: z.coerce.number().min(0, "Grace period cannot be negative"),
-  hourlyLateCharge: z.coerce.number().min(0, "Hourly late charge cannot be negative"),
-  defaultIncludedKmPerDay: z.coerce.number().min(0, "Included KM cannot be negative"),
+  gracePeriodMinutes: z.number().min(0, "Grace period cannot be negative"),
+  hourlyLateCharge: z.number().min(0, "Hourly late charge cannot be negative"),
+  defaultIncludedKmPerDay: z.number().min(0, "Included KM cannot be negative"),
 });
 
 type RentalRulesFormValues = z.infer<typeof rentalRulesSchema>;
@@ -42,7 +42,7 @@ export default function RentalRulesForm() {
   });
 
   const form = useForm<RentalRulesFormValues>({
-    resolver: zodResolver(rentalRulesSchema),
+    resolver: zodResolver(rentalRulesSchema) as any,
     values: tenant ? {
       gracePeriodMinutes: tenant.gracePeriodMinutes ?? 60,
       hourlyLateCharge: tenant.hourlyLateCharge ?? 1000,
@@ -105,7 +105,7 @@ export default function RentalRulesForm() {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-6">
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField

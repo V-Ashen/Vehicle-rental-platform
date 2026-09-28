@@ -39,8 +39,8 @@ import axios from "axios";
 const documentSchema = z.object({
   documentType: z.enum(["INSURANCE", "REVENUE", "EMISSION", "OTHER"]),
   documentNumber: z.string().min(1, "Document number is required"),
-  issueDate: z.date({ required_error: "Issue date is required" }),
-  expiryDate: z.date({ required_error: "Expiry date is required" }),
+  issueDate: z.date(),
+  expiryDate: z.date(),
   fileUrl: z.string().url("A file must be uploaded"),
 });
 
@@ -58,7 +58,7 @@ export default function AddDocumentModal({ vehicleId, isOpen, onClose }: AddDocu
   const [isUploading, setIsUploading] = useState(false);
 
   const form = useForm<DocumentFormValues>({
-    resolver: zodResolver(documentSchema),
+    resolver: zodResolver(documentSchema) as any,
     defaultValues: {
       documentType: "INSURANCE",
       documentNumber: "",
@@ -144,7 +144,7 @@ export default function AddDocumentModal({ vehicleId, isOpen, onClose }: AddDocu
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-6">
             
             <FormField
               control={form.control}
@@ -208,7 +208,6 @@ export default function AddDocumentModal({ vehicleId, isOpen, onClose }: AddDocu
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          initialFocus
                         />
                       </PopoverContent>
                     </Popover>
@@ -240,7 +239,6 @@ export default function AddDocumentModal({ vehicleId, isOpen, onClose }: AddDocu
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          initialFocus
                         />
                       </PopoverContent>
                     </Popover>

@@ -36,12 +36,12 @@ import {
 const packageSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   description: z.string().min(5, "Description must be at least 5 characters"),
-  monthlyPrice: z.coerce.number().min(0, "Price must be positive"),
-  yearlyPrice: z.coerce.number().min(0, "Price must be positive"),
-  trialDays: z.coerce.number().min(0, "Trial days must be positive"),
-  maxVehicles: z.coerce.number(),
-  maxUsers: z.coerce.number(),
-  maxBranches: z.coerce.number(),
+  monthlyPrice: z.number().min(0, "Price must be positive"),
+  yearlyPrice: z.number().min(0, "Price must be positive"),
+  trialDays: z.number().min(0, "Trial days must be positive"),
+  maxVehicles: z.number(),
+  maxUsers: z.number(),
+  maxBranches: z.number(),
   status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]),
 });
 
@@ -58,7 +58,7 @@ export function PackageFormModal({ isOpen, setIsOpen, initialData }: PackageForm
   const queryClient = useQueryClient();
 
   const form = useForm<PackageFormValues>({
-    resolver: zodResolver(packageSchema),
+    resolver: zodResolver(packageSchema) as any,
     defaultValues: {
       name: "",
       description: "",
@@ -128,7 +128,7 @@ export function PackageFormModal({ isOpen, setIsOpen, initialData }: PackageForm
           <DialogTitle>{initialData ? "Edit Package" : "Create Package"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-4 py-4">
             
             <div className="grid grid-cols-2 gap-4">
               <FormField

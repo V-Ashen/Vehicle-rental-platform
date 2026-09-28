@@ -58,10 +58,8 @@ export default function RolesTab() {
                   <h3 className="font-semibold text-slate-900 dark:text-white text-lg">{role.name}</h3>
                 </div>
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400">
+                  <DropdownMenuTrigger className="h-8 w-8 inline-flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md outline-none">
                       <MoreHorizontal className="h-4 w-4" />
-                    </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem className="cursor-pointer" onClick={() => setEditingRole(role)}>

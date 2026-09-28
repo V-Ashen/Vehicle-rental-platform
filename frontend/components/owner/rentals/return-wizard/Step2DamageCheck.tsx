@@ -17,7 +17,7 @@ import { apiClient } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Step2DamageCheck() {
-  const { control, register } = useFormContext<ReturnWizardFormValues>();
+  const { control, register, setValue, getValues } = useFormContext<ReturnWizardFormValues>();
   const { toast } = useToast();
   const { fields, append, remove } = useFieldArray({
     control,
@@ -34,7 +34,7 @@ export default function Step2DamageCheck() {
     const files = Array.from(e.target.files);
     
     try {
-      const currentUrls: string[] = control._formValues.damages[index].photoUrls || [];
+      const currentUrls: string[] = getValues(`damages.${index}.photoUrls`) || [];
       const newUrls: string[] = [...currentUrls];
       
       for (const file of files) {
@@ -53,14 +53,7 @@ export default function Step2DamageCheck() {
         newUrls.push(publicUrl);
       }
 
-      // Update the specific damage item's photoUrls using setValue would trigger re-render of the whole form, 
-      // but it's cleaner to just update the array element if we use RHF setValue correctly:
-      control._formValues.damages[index].photoUrls = newUrls;
-      
-      // Force a re-render for just this field to show the new photos
-      // A quick hack is to re-append and pop, but `update` is better if we imported it
-      // Let's just use an empty trigger to force UI update
-      control._subjects.watch.next({ name: `damages.${index}.photoUrls` });
+      setValue(`damages.${index}.photoUrls`, newUrls, { shouldValidate: true, shouldDirty: true });
       
     } catch (error) {
       console.error("Upload failed", error);
@@ -76,10 +69,9 @@ export default function Step2DamageCheck() {
   };
 
   const removePhoto = (damageIndex: number, photoIndex: number) => {
-    const currentUrls: string[] = control._formValues.damages[damageIndex].photoUrls || [];
+    const currentUrls: string[] = getValues(`damages.${damageIndex}.photoUrls`) || [];
     currentUrls.splice(photoIndex, 1);
-    control._formValues.damages[damageIndex].photoUrls = currentUrls;
-    control._subjects.watch.next({ name: `damages.${damageIndex}.photoUrls` });
+    setValue(`damages.${damageIndex}.photoUrls`, currentUrls, { shouldValidate: true, shouldDirty: true });
   };
 
   return (

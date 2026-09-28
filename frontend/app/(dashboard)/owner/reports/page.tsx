@@ -152,7 +152,6 @@ export default function ReportsDashboardPage() {
               </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
               <Calendar
-                initialFocus
                 mode="range"
                 defaultMonth={date?.from}
                 selected={date}
@@ -250,7 +249,7 @@ export default function ReportsDashboardPage() {
                 Detailed Report
               </h2>
               <div className="flex flex-wrap gap-3">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val || 'all')}>
                   <SelectTrigger className="w-[150px] bg-white dark:bg-slate-950">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
