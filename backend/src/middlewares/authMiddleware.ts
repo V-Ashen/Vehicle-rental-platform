@@ -46,6 +46,30 @@ export const requireSaaSAdmin = async (req: Request, res: Response, next: NextFu
   }
 };
 
+export const requireSaaSRole = (roles: ('SUPER_ADMIN' | 'FINANCE_ADMIN' | 'SUPPORT_ADMIN' | 'OPERATIONS_ADMIN')[]) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = (req as any).adminUser;
+      if (!user) {
+        return next(new AppError('SaaS Admin access required first', 'FORBIDDEN', 403));
+      }
+
+      const currentRole = user.saasRole || 'SUPER_ADMIN';
+      
+      // SUPER_ADMIN always has access, otherwise check if role is in allowed list
+      const hasAccess = currentRole === 'SUPER_ADMIN' || roles.includes(currentRole);
+      
+      if (!hasAccess) {
+        return next(new AppError('Forbidden: Insufficient SaaS Admin role privileges', 'FORBIDDEN', 403));
+      }
+      
+      next();
+    } catch (error) {
+      next(new AppError('Role validation failed', 'INTERNAL_SERVER_ERROR', 500));
+    }
+  };
+};
+
 export const requireOwner = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const firebaseUid = (req as any).user?.firebaseUid;

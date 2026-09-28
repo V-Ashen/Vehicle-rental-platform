@@ -181,7 +181,26 @@ export class RentalService {
         }
 
         if (vehicle?.status !== 'AVAILABLE') {
-          throw new AppError('VEHICLE_NOT_AVAILABLE', 'CONFLICT', 409);
+          // It's not available right now, but it could be available in the future.
+          // We will rely on the date overlap check below rather than outright rejecting it,
+          // unless you explicitly want to reject if it's currently on rent even for a future booking.
+          // For now, let's keep the date overlap as the ultimate source of truth.
+        }
+
+        // Conflict Validation: Check for overlapping future rentals
+        const overlappingRentalsQuery = db.collection('rentals')
+          .where('vehicleId', '==', vehicleId)
+          .where('status', 'in', ['RESERVED', 'ON_RENT', 'OVERDUE']);
+          
+        const overlappingSnapshot = await t.get(overlappingRentalsQuery);
+        for (const doc of overlappingSnapshot.docs) {
+          const r = doc.data();
+          const existingPickup = r.pickupAt.toDate ? r.pickupAt.toDate() : new Date(r.pickupAt);
+          const existingReturn = r.expectedReturnAt.toDate ? r.expectedReturnAt.toDate() : new Date(r.expectedReturnAt);
+          
+          if (existingPickup < returnDate && existingReturn > pickupDate) {
+            throw new AppError('Vehicle is already reserved during these dates.', 'CONFLICT', 400);
+          }
         }
 
         const baseRentalAmount = rentalDays * (vehicle.dailyRate || 0);
@@ -374,11 +393,13 @@ export class RentalService {
     
     try {
       let result: any = null;
+      let rentalData: any = null;
       await db.runTransaction(async (t) => {
         // 1. Fetch Rental
         const rentalDoc = await t.get(rentalRef);
         if (!rentalDoc.exists) throw new AppError('Rental not found', 'NOT_FOUND', 404);
         const rental = rentalDoc.data();
+        rentalData = rental;
         if (rental?.tenantId !== tenantId) throw new AppError('Rental not found', 'NOT_FOUND', 404);
         if (rental?.status !== 'ON_RENT') throw new AppError('Rental is not currently ON_RENT', 'INVALID_STATE', 400);
 
@@ -561,10 +582,10 @@ export class RentalService {
       });
 
       // Send return notification to customer
-      await notificationService.queueNotification(tenantId, rental.customerId, {
+      await notificationService.queueNotification(tenantId, rentalData.customerId, {
         type: 'RETURN_COMPLETED',
         channel: 'EMAIL',
-        subject: `Vehicle Return Receipt - ${rental.rentalNumber}`,
+        subject: `Vehicle Return Receipt - ${rentalData.id}`,
         message: `Your return has been processed. Final total: Rs. ${result.finalTotal}.`
       });
 

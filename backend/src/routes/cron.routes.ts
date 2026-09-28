@@ -11,5 +11,6 @@ router.use(requireCronSecret);
 router.post('/process-notifications', controller.processNotifications);
 router.post('/daily-subscriptions', controller.processDailySubscriptions);
 router.post('/daily-rentals', controller.processDailyRentals);
+router.post('/daily-vehicles', controller.processDailyVehicles);
 
 export default router;

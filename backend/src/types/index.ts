@@ -39,6 +39,7 @@ export interface User extends BaseEntity {
   email: string;
   roleId: string;
   userType: 'SAAS_ADMIN' | 'OWNER' | 'STAFF';
+  saasRole?: 'SUPER_ADMIN' | 'FINANCE_ADMIN' | 'SUPPORT_ADMIN' | 'OPERATIONS_ADMIN';
   status: 'ACTIVE' | 'INVITED' | 'DISABLED';
 }
 
@@ -251,6 +252,7 @@ export interface VehicleDocument extends BaseEntity {
   expiryDate: Date;
   fileUrl: string;
   status: 'ACTIVE' | 'EXPIRED';
+  lastReminderDays?: number;
 }
 
 export interface Notification extends BaseEntity {

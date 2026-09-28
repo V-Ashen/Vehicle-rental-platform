@@ -147,7 +147,8 @@ export class AuthService {
           email: user.email,
           roleId: user.roleId,
           userType: user.userType,
-          tenantId: user.tenantId
+          tenantId: user.tenantId,
+          saasRole: user.saasRole
         },
         role: 'SAAS_ADMIN'
       };

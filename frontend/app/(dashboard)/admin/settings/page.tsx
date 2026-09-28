@@ -22,16 +22,18 @@ export default function AdminSettingsPage() {
   });
 
   const [alertsEnabled, setAlertsEnabled] = React.useState(true);
+  const [fleetAlertsEnabled, setFleetAlertsEnabled] = React.useState(true);
 
   React.useEffect(() => {
     if (settings) {
       setAlertsEnabled(settings.subscriptionAlertsEnabled !== false);
+      setFleetAlertsEnabled(settings.rentalAndFleetAlertsEnabled !== false);
     }
   }, [settings]);
 
   const updateMutation = useMutation({
-    mutationFn: async (subscriptionAlertsEnabled: boolean) => {
-      const res = await apiClient.put("/admin/settings", { subscriptionAlertsEnabled });
+    mutationFn: async (payload: { subscriptionAlertsEnabled: boolean; rentalAndFleetAlertsEnabled: boolean }) => {
+      const res = await apiClient.put("/admin/settings", payload);
       return res.data;
     },
     onSuccess: () => {
@@ -51,7 +53,10 @@ export default function AdminSettingsPage() {
   });
 
   const handleSave = () => {
-    updateMutation.mutate(alertsEnabled);
+    updateMutation.mutate({ 
+      subscriptionAlertsEnabled: alertsEnabled, 
+      rentalAndFleetAlertsEnabled: fleetAlertsEnabled 
+    });
   };
 
   return (
@@ -94,6 +99,22 @@ export default function AdminSettingsPage() {
               <Switch
                 checked={alertsEnabled}
                 onCheckedChange={setAlertsEnabled}
+              />
+            </div>
+
+            <div className="flex flex-row items-center justify-between rounded-lg border border-slate-200 p-4 bg-slate-50">
+              <div className="space-y-0.5">
+                <div className="flex items-center">
+                  <Bell className="w-4 h-4 mr-2 text-slate-500" />
+                  <label className="text-base font-medium">Rental & Fleet Operation Alerts</label>
+                </div>
+                <p className="text-sm text-slate-500 max-w-[400px] mt-1">
+                  Globally enable or disable automated alerts for overdue rentals, upcoming pickups, and vehicle document expirations. Turn this off if you need to pause all daily operational emails.
+                </p>
+              </div>
+              <Switch
+                checked={fleetAlertsEnabled}
+                onCheckedChange={setFleetAlertsEnabled}
               />
             </div>
 

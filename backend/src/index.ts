@@ -14,6 +14,8 @@ const server = app.listen(PORT, () => {
     try {
       await cronService.processNotifications();
       await cronService.processDailySubscriptions();
+      await cronService.processDailyRentals();
+      await cronService.processDailyVehicles();
     } catch (e) {
       console.error('Background worker error:', e);
     }

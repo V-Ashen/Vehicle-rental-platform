@@ -244,6 +244,9 @@ export class CronService {
       .where('expectedReturnAt', '<', now)
       .get();
 
+    const settingsDoc = await db.collection('systemSettings').doc('notifications').get();
+    const rentalAndFleetAlertsEnabled = settingsDoc.exists ? settingsDoc.data()?.rentalAndFleetAlertsEnabled !== false : true;
+
     for (const doc of overdueQuery.docs) {
       const rental = doc.data();
       if (!rental.isOverdue) {
@@ -253,41 +256,43 @@ export class CronService {
           updatedBy: 'SYSTEM_CRON'
         });
 
-        // Notify Customer
-        const notifId = generateId(IdPrefix.NOTIFICATION);
+        if (rentalAndFleetAlertsEnabled) {
+          // Notify Customer
+          const notifId = generateId(IdPrefix.NOTIFICATION);
         const notifRef = db.collection('notifications').doc(notifId);
-        batch.set(notifRef, {
-          id: notifId,
-          tenantId: rental.tenantId,
-          userId: rental.customerId,
-          type: 'OVERDUE_ALERT',
-          channel: 'EMAIL',
-          subject: 'Rental Overdue Notice',
-          message: `Your rental is overdue! Please return the vehicle immediately to avoid additional late charges.`,
-          status: 'QUEUED',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          createdBy: 'SYSTEM_CRON',
-          updatedBy: 'SYSTEM_CRON'
-        });
+          batch.set(notifRef, {
+            id: notifId,
+            tenantId: rental.tenantId,
+            userId: rental.customerId,
+            type: 'OVERDUE_ALERT',
+            channel: 'EMAIL',
+            subject: 'Rental Overdue Notice',
+            message: `Your rental is overdue! Please return the vehicle immediately to avoid additional late charges.`,
+            status: 'QUEUED',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            createdBy: 'SYSTEM_CRON',
+            updatedBy: 'SYSTEM_CRON'
+          });
 
-        // Notify Owner
-        const ownerNotifId = generateId(IdPrefix.NOTIFICATION);
+          // Notify Owner
+          const ownerNotifId = generateId(IdPrefix.NOTIFICATION);
         const ownerNotifRef = db.collection('notifications').doc(ownerNotifId);
-        batch.set(ownerNotifRef, {
-          id: ownerNotifId,
-          tenantId: rental.tenantId,
-          userId: 'TENANT_ADMIN',
-          type: 'OVERDUE_ALERT',
-          channel: 'EMAIL',
-          subject: 'Vehicle Overdue Alert',
-          message: `Vehicle for rental ${rental.id} is overdue by customer.`,
-          status: 'QUEUED',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          createdBy: 'SYSTEM_CRON',
-          updatedBy: 'SYSTEM_CRON'
-        });
+          batch.set(ownerNotifRef, {
+            id: ownerNotifId,
+            tenantId: rental.tenantId,
+            userId: 'TENANT_ADMIN',
+            type: 'OVERDUE_ALERT',
+            channel: 'EMAIL',
+            subject: 'Vehicle Overdue Alert',
+            message: `Vehicle for rental ${rental.id} is overdue by customer.`,
+            status: 'QUEUED',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            createdBy: 'SYSTEM_CRON',
+            updatedBy: 'SYSTEM_CRON'
+          });
+        }
         
         overdueCount++;
       }
@@ -310,22 +315,24 @@ export class CronService {
           updatedBy: 'SYSTEM_CRON'
         });
 
-        const notifId = generateId(IdPrefix.NOTIFICATION);
-        const notifRef = db.collection('notifications').doc(notifId);
-        batch.set(notifRef, {
-          id: notifId,
-          tenantId: rental.tenantId,
-          userId: rental.customerId,
-          type: 'UPCOMING_PICKUP',
-          channel: 'EMAIL',
-          subject: 'Upcoming Vehicle Pickup',
-          message: `Your vehicle rental is scheduled for pickup within 24 hours!`,
-          status: 'QUEUED',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          createdBy: 'SYSTEM_CRON',
-          updatedBy: 'SYSTEM_CRON'
-        });
+        if (rentalAndFleetAlertsEnabled) {
+          const notifId = generateId(IdPrefix.NOTIFICATION);
+          const notifRef = db.collection('notifications').doc(notifId);
+          batch.set(notifRef, {
+            id: notifId,
+            tenantId: rental.tenantId,
+            userId: rental.customerId,
+            type: 'UPCOMING_PICKUP',
+            channel: 'EMAIL',
+            subject: 'Upcoming Vehicle Pickup',
+            message: `Your vehicle rental is scheduled for pickup within 24 hours!`,
+            status: 'QUEUED',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            createdBy: 'SYSTEM_CRON',
+            updatedBy: 'SYSTEM_CRON'
+          });
+        }
 
         upcomingCount++;
       }
@@ -336,5 +343,86 @@ export class CronService {
     }
 
     return { overdueCount, upcomingCount, message: 'Processed daily rentals successfully' };
+  }
+
+  async processDailyVehicles() {
+    const now = new Date();
+    const docsRef = db.collection('vehicleDocuments');
+    const batch = db.batch();
+    let remindersSent = 0;
+    let expiredCount = 0;
+
+    const activeDocs = await docsRef.where('status', '==', 'ACTIVE').get();
+    const settingsDoc = await db.collection('systemSettings').doc('notifications').get();
+    const rentalAndFleetAlertsEnabled = settingsDoc.exists ? settingsDoc.data()?.rentalAndFleetAlertsEnabled !== false : true;
+
+    for (const doc of activeDocs.docs) {
+      const vDoc = doc.data();
+      if (!vDoc.expiryDate) continue;
+
+      const endDate = vDoc.expiryDate.toDate ? vDoc.expiryDate.toDate() : new Date(vDoc.expiryDate);
+      const diffDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
+
+      // Expirations
+      if (diffDays <= 0) {
+        batch.update(doc.ref, {
+          status: 'EXPIRED',
+          updatedAt: new Date(),
+          updatedBy: 'SYSTEM_CRON'
+        });
+
+        if (rentalAndFleetAlertsEnabled) {
+          const notifId = generateId(IdPrefix.NOTIFICATION);
+          const notifRef = db.collection('notifications').doc(notifId);
+          batch.set(notifRef, {
+            id: notifId,
+            tenantId: vDoc.tenantId,
+            userId: 'TENANT_ADMIN',
+            type: 'FLEET_ALERT_INSURANCE',
+            channel: 'EMAIL',
+            subject: `Vehicle Document Expired`,
+            message: `The ${vDoc.documentType} document for vehicle ${vDoc.vehicleId} has expired!`,
+            status: 'QUEUED',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            createdBy: 'SYSTEM_CRON',
+            updatedBy: 'SYSTEM_CRON'
+          });
+        }
+
+        expiredCount++;
+      }
+      // Reminders (7, 3, 1 days)
+      else if ((diffDays === 7 || diffDays === 3 || diffDays === 1) && vDoc.lastReminderDays !== diffDays) {
+        batch.update(doc.ref, { lastReminderDays: diffDays });
+
+        if (rentalAndFleetAlertsEnabled) {
+          const notifId = generateId(IdPrefix.NOTIFICATION);
+          const notifRef = db.collection('notifications').doc(notifId);
+          batch.set(notifRef, {
+            id: notifId,
+            tenantId: vDoc.tenantId,
+            userId: 'TENANT_ADMIN',
+            type: 'FLEET_ALERT_INSURANCE',
+            channel: 'EMAIL',
+            subject: `Vehicle Document Expiring Soon`,
+            message: `The ${vDoc.documentType} document for vehicle ${vDoc.vehicleId} will expire in ${diffDays} days.`,
+            status: 'QUEUED',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            createdBy: 'SYSTEM_CRON',
+            updatedBy: 'SYSTEM_CRON'
+          });
+        }
+
+        remindersSent++;
+      }
+    }
+
+    if (remindersSent > 0 || expiredCount > 0) {
+      await batch.commit();
+    }
+
+    return { remindersSent, expiredCount, message: 'Processed vehicle documents successfully' };
   }
 }
