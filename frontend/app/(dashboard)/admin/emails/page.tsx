@@ -7,13 +7,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Mail, Send } from "lucide-react";
+import { Loader2, Mail, Send, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 type EmailTemplate = {
   type: string;
   subject: string;
   html: string;
+};
+
+type EmailHistory = {
+  id: string;
+  tenantId: string;
+  userId: string;
+  type: string;
+  subject: string;
+  status: string;
+  errorMessage: string | null;
+  createdAt: string;
 };
 
 export default function AdminEmailsPage() {
@@ -24,11 +38,19 @@ export default function AdminEmailsPage() {
   const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
 
-  const { data: templates = [], isLoading } = useQuery({
+  const { data: templates = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ["admin-email-templates"],
     queryFn: async () => {
       const res = await apiClient.get("/admin/emails/templates");
       return res.data.data as EmailTemplate[];
+    },
+  });
+
+  const { data: history = [], isLoading: isLoadingHistory } = useQuery({
+    queryKey: ["admin-email-history"],
+    queryFn: async () => {
+      const res = await apiClient.get("/admin/emails/history");
+      return res.data.data as EmailHistory[];
     },
   });
 
@@ -77,7 +99,7 @@ export default function AdminEmailsPage() {
     setIsPreviewDialogOpen(true);
   };
 
-  if (isLoading) {
+  if (isLoadingTemplates || isLoadingHistory) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
@@ -97,43 +119,110 @@ export default function AdminEmailsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {templates.map((template) => (
-          <Card key={template.type} className="border-slate-200 dark:border-slate-800 flex flex-col">
+      <Tabs defaultValue="templates" className="w-full">
+        <TabsList className="mb-6 bg-slate-100 dark:bg-slate-800">
+          <TabsTrigger value="templates" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900">
+            <Mail className="w-4 h-4 mr-2" />
+            Mail Templates
+          </TabsTrigger>
+          <TabsTrigger value="history" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900">
+            <History className="w-4 h-4 mr-2" />
+            Mail History
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="templates" className="mt-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {templates.map((template) => (
+              <Card key={template.type} className="border-slate-200 dark:border-slate-800 flex flex-col">
+                <CardHeader className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 rounded-t-xl">
+                  <CardTitle className="text-lg font-bold text-slate-900 dark:text-white truncate">
+                    {template.type}
+                  </CardTitle>
+                  <p className="text-sm text-slate-500 truncate" title={template.subject}>
+                    Subject: {template.subject}
+                  </p>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col gap-4 flex-grow">
+                  <div 
+                    className="w-full h-40 overflow-hidden border border-slate-200 dark:border-slate-800 rounded-lg relative cursor-pointer group"
+                    onClick={() => openPreview(template)}
+                  >
+                    <div className="absolute inset-0 bg-slate-900/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                      <span className="bg-slate-900 text-white px-3 py-1 rounded-full text-sm font-medium shadow-sm">Click to Preview</span>
+                    </div>
+                    <iframe 
+                      srcDoc={template.html} 
+                      className="w-full h-full pointer-events-none origin-top-left scale-[0.4] w-[250%] h-[250%]"
+                      style={{ border: "none" }}
+                      title={`Preview of ${template.type}`}
+                    />
+                  </div>
+                  <Button 
+                    onClick={() => openTestDialog(template)}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    <Send className="mr-2 h-4 w-4" />
+                    Test Delivery
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-0">
+          <Card className="border-slate-200 dark:border-slate-800">
             <CardHeader className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 rounded-t-xl">
-              <CardTitle className="text-lg font-bold text-slate-900 dark:text-white truncate">
-                {template.type}
-              </CardTitle>
-              <p className="text-sm text-slate-500 truncate" title={template.subject}>
-                Subject: {template.subject}
-              </p>
+              <CardTitle className="text-lg font-bold text-slate-900 dark:text-white">Recent Dispatches</CardTitle>
             </CardHeader>
-            <CardContent className="p-6 flex flex-col gap-4 flex-grow">
-              <div 
-                className="w-full h-40 overflow-hidden border border-slate-200 dark:border-slate-800 rounded-lg relative cursor-pointer group"
-                onClick={() => openPreview(template)}
-              >
-                <div className="absolute inset-0 bg-slate-900/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                  <span className="bg-slate-900 text-white px-3 py-1 rounded-full text-sm font-medium shadow-sm">Click to Preview</span>
-                </div>
-                <iframe 
-                  srcDoc={template.html} 
-                  className="w-full h-full pointer-events-none origin-top-left scale-[0.4] w-[250%] h-[250%]"
-                  style={{ border: "none" }}
-                  title={`Preview of ${template.type}`}
-                />
-              </div>
-              <Button 
-                onClick={() => openTestDialog(template)}
-                className="w-full bg-indigo-600 hover:bg-indigo-700"
-              >
-                <Send className="mr-2 h-4 w-4" />
-                Test Delivery
-              </Button>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>Tenant ID</TableHead>
+                    <TableHead>User ID</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created At</TableHead>
+                    <TableHead>Error</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {history.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                        No mail history found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    history.map((h) => (
+                      <TableRow key={h.id}>
+                        <TableCell className="font-medium text-slate-900 dark:text-white">{h.type}</TableCell>
+                        <TableCell className="max-w-[200px] truncate" title={h.subject}>{h.subject}</TableCell>
+                        <TableCell>{h.tenantId || "N/A"}</TableCell>
+                        <TableCell>{h.userId || "N/A"}</TableCell>
+                        <TableCell>
+                          <Badge variant={h.status === 'SENT' ? 'default' : h.status === 'FAILED' ? 'destructive' : h.status === 'CANCELLED' ? 'secondary' : 'outline'}>
+                            {h.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-slate-500 whitespace-nowrap">
+                          {new Date(h.createdAt).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate text-red-500" title={h.errorMessage || ""}>
+                          {h.errorMessage || "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
-        ))}
-      </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Test Email Dialog */}
       <Dialog open={isTestDialogOpen} onOpenChange={setIsTestDialogOpen}>

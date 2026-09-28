@@ -559,6 +559,15 @@ export class RentalService {
 
         result = returnData;
       });
+
+      // Send return notification to customer
+      await notificationService.queueNotification(tenantId, rental.customerId, {
+        type: 'RETURN_COMPLETED',
+        channel: 'EMAIL',
+        subject: `Vehicle Return Receipt - ${rental.rentalNumber}`,
+        message: `Your return has been processed. Final total: Rs. ${result.finalTotal}.`
+      });
+
       return result;
     } catch (e: any) {
       if (e instanceof AppError) throw e;

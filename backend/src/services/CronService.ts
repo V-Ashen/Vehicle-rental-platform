@@ -100,7 +100,11 @@ export class CronService {
         });
         successCount++;
       } catch (e: any) {
-        console.error(`Failed to send notification ${doc.id}:`, e);
+        if (e?.message?.includes('monthly email sending quota')) {
+          console.error(`[Quota Reached] Failed to send notification ${doc.id}`);
+        } else {
+          console.error(`Failed to send notification ${doc.id}:`, e.message);
+        }
         batch.update(doc.ref, {
           status: 'FAILED',
           errorMessage: e?.message || 'Unknown error',
@@ -145,25 +149,40 @@ export class CronService {
       const diffDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
 
       // Reminders
-      if (diffDays === 7 || diffDays === 3 || diffDays === 1) {
-        const notifId = generateId(IdPrefix.NOTIFICATION);
-        const notifRef = db.collection('notifications').doc(notifId);
+      if ((diffDays === 7 || diffDays === 3 || diffDays === 1) && sub.lastReminderDays !== diffDays) {
+        // Global Setting check
+        const settingsDoc = await db.collection('systemSettings').doc('notifications').get();
+        const globalAlertsEnabled = settingsDoc.exists ? settingsDoc.data()?.subscriptionAlertsEnabled !== false : true;
 
-        batch.set(notifRef, {
-          id: notifId,
-          tenantId: sub.tenantId,
-          userId: 'TENANT_ADMIN',
-          type: 'RENEWAL_REMINDER',
-          channel: 'EMAIL',
-          subject: `Your subscription expires in ${diffDays} days!`,
-          message: `Please renew your subscription to avoid service interruption.`,
-          status: 'QUEUED',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          createdBy: 'SYSTEM_CRON',
-          updatedBy: 'SYSTEM_CRON'
-        });
-        remindersSent++;
+        if (globalAlertsEnabled) {
+          const tenantDoc = await tenantsRef.doc(sub.tenantId).get();
+          const tenantData = tenantDoc.exists ? tenantDoc.data() : null;
+
+        if (tenantData && tenantData.subscriptionEmailEnabled !== false) {
+          const notifId = generateId(IdPrefix.NOTIFICATION);
+          const notifRef = db.collection('notifications').doc(notifId);
+
+          batch.set(notifRef, {
+            id: notifId,
+            tenantId: sub.tenantId,
+            userId: 'TENANT_ADMIN',
+            type: 'RENEWAL_REMINDER',
+            channel: 'EMAIL',
+            subject: `Your subscription expires in ${diffDays} days!`,
+            message: `Please renew your subscription to avoid service interruption.`,
+            status: 'QUEUED',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            createdBy: 'SYSTEM_CRON',
+            updatedBy: 'SYSTEM_CRON'
+          });
+
+          // Mark that this specific reminder (7, 3, or 1 days) has been sent so we don't spam it.
+          batch.update(doc.ref, { lastReminderDays: diffDays });
+          
+          remindersSent++;
+        }
+        }
       }
 
       // Expirations

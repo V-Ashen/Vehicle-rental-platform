@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getEmailTemplate } from '../utils/emailTemplates';
 import { Resend } from 'resend';
+import { db } from '../config/firebase';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy');
 
@@ -92,6 +93,33 @@ export class AdminEmailsController {
       }
 
       res.status(200).json({ success: true, message: 'Test email dispatched successfully', data });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  async getHistory(req: Request, res: Response) {
+    try {
+      const snapshot = await db.collection('notifications')
+        .orderBy('createdAt', 'desc')
+        .limit(100)
+        .get();
+
+      const history = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          tenantId: data.tenantId,
+          userId: data.userId,
+          type: data.type,
+          subject: data.subject,
+          status: data.status,
+          errorMessage: data.errorMessage || null,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt
+        };
+      });
+
+      res.status(200).json({ success: true, data: history });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }

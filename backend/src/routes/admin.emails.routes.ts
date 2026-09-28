@@ -11,5 +11,6 @@ router.use(requireSaaSAdmin);
 
 router.get('/templates', controller.getTemplates.bind(controller));
 router.post('/test', controller.testTemplate.bind(controller));
+router.get('/history', controller.getHistory.bind(controller));
 
 export default router;
