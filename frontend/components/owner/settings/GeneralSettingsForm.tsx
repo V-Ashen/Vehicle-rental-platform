@@ -7,6 +7,8 @@ import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
 import {
   Form,
   FormControl,
@@ -30,6 +32,7 @@ const generalSchema = z.object({
   city: z.string().min(2, "City is required"),
   emailEnabled: z.boolean().default(true),
   smsEnabled: z.boolean().default(false),
+  subscriptionEmailEnabled: z.boolean().default(true),
   invoiceNotes: z.string().optional(),
   agreementTerms: z.string().optional(),
 });
@@ -39,6 +42,8 @@ type GeneralFormValues = z.infer<typeof generalSchema>;
 export default function GeneralSettingsForm() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { activePackage } = useAuth();
+  const hasSmsFeature = activePackage?.features?.smsNotifications === true || activePackage?.features?.allFeatures === true;
 
   const { data: tenant, isLoading, isError, error } = useQuery({
     queryKey: ["owner-profile"],
@@ -58,6 +63,7 @@ export default function GeneralSettingsForm() {
       city: tenant.city || "",
       emailEnabled: tenant.emailEnabled !== false, // default true if undefined
       smsEnabled: tenant.smsEnabled === true,
+      subscriptionEmailEnabled: tenant.subscriptionEmailEnabled !== false, // default true if undefined
       invoiceNotes: tenant.invoiceNotes || "",
       agreementTerms: tenant.agreementTerms || "",
     } : {
@@ -68,6 +74,7 @@ export default function GeneralSettingsForm() {
       city: "",
       emailEnabled: true,
       smsEnabled: false,
+      subscriptionEmailEnabled: true,
       invoiceNotes: "",
       agreementTerms: "",
     },
@@ -84,6 +91,7 @@ export default function GeneralSettingsForm() {
         city: data.city,
         emailEnabled: data.emailEnabled,
         smsEnabled: data.smsEnabled,
+        subscriptionEmailEnabled: data.subscriptionEmailEnabled,
         invoiceNotes: data.invoiceNotes,
         agreementTerms: data.agreementTerms
       });
@@ -237,9 +245,35 @@ export default function GeneralSettingsForm() {
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-900/50">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">SMS Notifications</FormLabel>
+                        <div className="flex items-center gap-2">
+                          <FormLabel className="text-base">SMS Notifications</FormLabel>
+                          {!hasSmsFeature && (
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 text-xs font-normal">Upgrade Required</Badge>
+                          )}
+                        </div>
                         <CardDescription>
                           Receive critical alerts via SMS (charges apply).
+                        </CardDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={!hasSmsFeature}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="subscriptionEmailEnabled"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-900/50 md:col-span-2">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Platform Subscription Alerts</FormLabel>
+                        <CardDescription>
+                          Receive renewal reminders and billing alerts from the platform. Turn off to reduce email volume.
                         </CardDescription>
                       </div>
                       <FormControl>

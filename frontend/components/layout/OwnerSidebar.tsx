@@ -19,6 +19,7 @@ import { useState } from 'react';
 import { cn } from 'cn';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { FeatureGuard } from '@/components/ui/FeatureGuard';
 
 export function OwnerSidebar() {
   const currentPath = usePathname();
@@ -78,7 +79,7 @@ export function OwnerSidebar() {
           {links.map((link) => {
             const isActive = currentPath.startsWith(link.href);
             const Icon = link.icon;
-            return (
+            const LinkContent = (
               <Link 
                 key={link.name} 
                 href={link.href}
@@ -97,6 +98,16 @@ export function OwnerSidebar() {
                 {link.name}
               </Link>
             );
+
+            if (link.name === 'Reports') {
+              return (
+                <FeatureGuard key={link.name} feature="advancedReporting">
+                  {LinkContent}
+                </FeatureGuard>
+              );
+            }
+            
+            return LinkContent;
           })}
         </nav>
       </aside>

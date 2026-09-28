@@ -9,6 +9,8 @@ const controller = new ReportController();
 
 router.use(verifyToken, requireOwner, requireOperationalTenant);
 
-router.get('/financial', validate(financialReportSchema), controller.getFinancial);
+router.get('/financial', validate(financialReportSchema), controller.getFinancial.bind(controller));
+router.get('/detailed', controller.getDetailed.bind(controller));
+router.get('/export', controller.exportDetailed.bind(controller));
 
 export default router;

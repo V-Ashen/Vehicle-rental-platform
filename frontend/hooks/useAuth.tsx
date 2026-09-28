@@ -10,6 +10,7 @@ type AuthContextType = {
   dbUser: any | null; // Database user document
   tenant: any | null; // Tenant document (for owners)
   subscription: any | null; // Subscription document (for owners)
+  activePackage: any | null; // The tenant's active package with features
   loading: boolean;
 };
 
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   dbUser: null, 
   tenant: null,
   subscription: null,
+  activePackage: null,
   loading: true 
 });
 
@@ -26,6 +28,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [dbUser, setDbUser] = useState<any | null>(null);
   const [tenant, setTenant] = useState<any | null>(null);
   const [subscription, setSubscription] = useState<any | null>(null);
+  const [activePackage, setActivePackage] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,13 +44,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setDbUser(payload.user || null);
           setTenant(payload.tenant || null);
           setSubscription(payload.subscription || null);
+          setActivePackage(payload.activePackage || null);
         } catch (error) {
           console.error("Failed to fetch DB user", error);
+          // If the DB user is suspended or not found, forcefully sign out
+          // to prevent an infinite redirect loop.
+          await auth.signOut();
+          setDbUser(null);
+          setTenant(null);
+          setSubscription(null);
+          setActivePackage(null);
         }
       } else {
         setDbUser(null);
         setTenant(null);
         setSubscription(null);
+        setActivePackage(null);
       }
       setLoading(false);
     });
@@ -56,7 +68,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, dbUser, tenant, subscription, loading }}>
+    <AuthContext.Provider value={{ user, dbUser, tenant, subscription, activePackage, loading }}>
       {children}
     </AuthContext.Provider>
   );

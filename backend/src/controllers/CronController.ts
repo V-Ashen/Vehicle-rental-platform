@@ -18,4 +18,9 @@ export class CronController {
     const result = await cronService.processDailyRentals();
     res.status(200).json({ success: true, data: result });
   }
+
+  async processDailyVehicles(req: Request, res: Response) {
+    const result = await cronService.processDailyVehicles();
+    res.status(200).json({ success: true, data: result });
+  }
 }

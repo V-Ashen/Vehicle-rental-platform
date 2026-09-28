@@ -17,6 +17,7 @@ export const updateOwnerProfileSchema = z.object({
 
     emailEnabled: z.boolean().optional(),
     smsEnabled: z.boolean().optional(),
+    subscriptionEmailEnabled: z.boolean().optional(),
     invoiceNotes: z.string().optional(),
     agreementTerms: z.string().optional()
   })

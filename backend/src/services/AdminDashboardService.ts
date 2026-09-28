@@ -35,4 +35,35 @@ export class AdminDashboardService {
       pendingPaymentRequests
     };
   }
+
+  async getRecentActivity() {
+    const tenantsResult = await tenantRepo.findAllPaginated(10, undefined, 'createdAt', 'desc', []);
+    const prsResult = await prRepo.findAllPaginated(10, undefined, 'createdAt', 'desc', []);
+
+    const tenants = tenantsResult.data;
+    const prs = prsResult.data;
+
+    const activity = [
+      ...tenants.map(t => ({
+        id: t.id,
+        type: 'TENANT',
+        title: 'New Business Registered',
+        description: `${t.businessName} has registered.`,
+        timestamp: t.createdAt?.toDate ? t.createdAt.toDate().toISOString() : t.createdAt,
+        status: t.accountStatus
+      })),
+      ...prs.map(p => ({
+        id: p.id,
+        type: 'PAYMENT_REQUEST',
+        title: 'Payment Request Updated',
+        description: `Payment request for ${p.tenantId} is ${p.status}.`,
+        timestamp: p.createdAt?.toDate ? p.createdAt.toDate().toISOString() : p.createdAt,
+        status: p.status
+      }))
+    ];
+
+    activity.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    return activity.slice(0, 10);
+  }
 }

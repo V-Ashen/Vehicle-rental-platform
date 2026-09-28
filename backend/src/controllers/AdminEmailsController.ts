@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getEmailTemplate } from '../utils/emailTemplates';
 import { Resend } from 'resend';
+import { db } from '../config/firebase';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy');
 
@@ -92,6 +93,77 @@ export class AdminEmailsController {
       }
 
       res.status(200).json({ success: true, message: 'Test email dispatched successfully', data });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  async getHistory(req: Request, res: Response) {
+    try {
+      const snapshot = await db.collection('notifications')
+        .orderBy('createdAt', 'desc')
+        .limit(100)
+        .get();
+
+      const userCache: Record<string, string> = {};
+
+      const historyPromises = snapshot.docs.map(async doc => {
+        const data = doc.data();
+        let userName = data.userId; // fallback to ID
+
+        if (data.userId === 'TENANT_ADMIN') {
+          if (data.tenantId) {
+            if (userCache[`TENANT_${data.tenantId}`]) {
+              userName = userCache[`TENANT_${data.tenantId}`];
+            } else {
+              const tenantDoc = await db.collection('tenants').doc(data.tenantId).get();
+              if (tenantDoc.exists) {
+                userName = `${tenantDoc.data()?.businessName || 'Unknown Business'} (Admin)`;
+                userCache[`TENANT_${data.tenantId}`] = userName;
+              } else {
+                userName = 'Tenant Admin';
+              }
+            }
+          } else {
+            userName = 'Tenant Admin';
+          }
+        } else if (data.userId) {
+          if (userCache[data.userId]) {
+            userName = userCache[data.userId];
+          } else {
+            // Check if customer
+            if (data.userId.startsWith('CUS-')) {
+              const custDoc = await db.collection('customers').doc(data.userId).get();
+              if (custDoc.exists) {
+                userName = custDoc.data()?.fullName || custDoc.data()?.name || data.userId;
+              }
+            } else {
+              // Assume user
+              const userDoc = await db.collection('users').doc(data.userId).get();
+              if (userDoc.exists) {
+                userName = userDoc.data()?.fullName || userDoc.data()?.name || data.userId;
+              }
+            }
+            userCache[data.userId] = userName;
+          }
+        }
+
+        return {
+          id: doc.id,
+          tenantId: data.tenantId,
+          userId: data.userId,
+          userName: userName,
+          type: data.type,
+          subject: data.subject,
+          status: data.status,
+          errorMessage: data.errorMessage || null,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt
+        };
+      });
+
+      const history = await Promise.all(historyPromises);
+
+      res.status(200).json({ success: true, data: history });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }

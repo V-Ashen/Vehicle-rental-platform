@@ -5,7 +5,10 @@ const dashboardService = new AdminDashboardService();
 
 export class AdminDashboardController {
   async getMetrics(req: Request, res: Response) {
-    const result = await dashboardService.getMetrics();
-    res.status(200).json({ success: true, data: result });
+    const [metrics, activity] = await Promise.all([
+      dashboardService.getMetrics(),
+      dashboardService.getRecentActivity()
+    ]);
+    res.status(200).json({ success: true, data: { ...metrics, activity } });
   }
 }

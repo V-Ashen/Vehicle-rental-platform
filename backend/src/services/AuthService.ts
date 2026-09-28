@@ -147,7 +147,8 @@ export class AuthService {
           email: user.email,
           roleId: user.roleId,
           userType: user.userType,
-          tenantId: user.tenantId
+          tenantId: user.tenantId,
+          saasRole: user.saasRole
         },
         role: 'SAAS_ADMIN'
       };
@@ -187,6 +188,8 @@ export class AuthService {
       }
     }
 
+    const activePackage = activeSub.packageId ? await packageRepo.findById(activeSub.packageId) : null;
+
     return {
       user: {
         id: user.id,
@@ -202,7 +205,8 @@ export class AuthService {
         businessName: tenant.businessName,
         profileStatus: tenant.profileStatus
       },
-      subscription: activeSub
+      subscription: activeSub,
+      activePackage
     };
   }
   async googleLogin(firebaseToken: string) {
@@ -297,7 +301,8 @@ export class AuthService {
         businessName,
         profileStatus: 'INCOMPLETE'
       },
-      subscription: activeSub
+      subscription: activeSub,
+      activePackage: starterPackage
     };
   }
 
