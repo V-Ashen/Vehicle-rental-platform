@@ -37,7 +37,7 @@ export class NotificationController {
       const { tenantId, id: uid } = dbUser;
       const { id } = req.params;
 
-      const notifRef = db.collection('notifications').doc(id);
+      const notifRef = db.collection('notifications').doc(id as string);
       const doc = await notifRef.get();
 
       if (!doc.exists) {
