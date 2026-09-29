@@ -134,5 +134,6 @@ export default function ForgotPasswordPage() {
         </Card>
       </div>
     </div>
+    </div>
   );
 }
