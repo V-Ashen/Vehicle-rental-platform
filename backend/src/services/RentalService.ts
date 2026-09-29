@@ -83,8 +83,8 @@ export class RentalService {
         .where('rentalId', '==', rentalId)
         .get();
 
-      let pickupHandover = null;
-      let returnHandover = null;
+      let pickupHandover: any = null;
+      let returnHandover: any = null;
       
       handoversQuery.docs.forEach(doc => {
         const data = doc.data();
