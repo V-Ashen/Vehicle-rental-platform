@@ -24,7 +24,10 @@ import { FeatureGuard } from '@/components/ui/FeatureGuard';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 
-const navGroups = [
+type NavLink = { name: string; href: string; icon: any; requiredPermission?: string; featureGuard?: string };
+type NavGroup = { label: string; links: NavLink[] };
+
+const navGroups: NavGroup[] = [
   {
     label: 'Overview',
     links: [

@@ -32,15 +32,15 @@ export default function Step3Handover() {
     enabled: !!vehicleId
   });
 
+  const [lastAutoFilledVehicle, setLastAutoFilledVehicle] = useState<string | null>(null);
+
   useEffect(() => {
-    if (vehicleData?.currentOdometer) {
-      // Auto-fill odometer if not already filled
-      const currentOdo = control._formValues.odometer;
-      if (!currentOdo || currentOdo === 0) {
-        setValue("odometer", vehicleData.currentOdometer, { shouldValidate: true });
-      }
+    if (vehicleData && vehicleId && lastAutoFilledVehicle !== vehicleId) {
+      const odometerValue = vehicleData.currentOdometer || 0;
+      setValue("odometer", odometerValue, { shouldValidate: true, shouldDirty: true });
+      setLastAutoFilledVehicle(vehicleId);
     }
-  }, [vehicleData, setValue, control._formValues.odometer]);
+  }, [vehicleData, vehicleId, lastAutoFilledVehicle, setValue]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -113,7 +113,13 @@ export default function Step3Handover() {
                 <FormItem>
                   <FormLabel>Outgoing Odometer (km)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="e.g. 45000" {...field} />
+                    <Input 
+                      type="number" 
+                      placeholder="e.g. 45000" 
+                      {...field} 
+                      value={field.value === undefined ? '' : field.value}
+                      onChange={(e) => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

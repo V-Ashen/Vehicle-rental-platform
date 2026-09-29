@@ -163,7 +163,7 @@ export default function ReportsDashboardPage() {
                 <Filter className="w-4 h-4 text-indigo-500" />
                 Detailed Records
               </h2>
-              <Select value={statusFilter} onValueChange={val => { setStatusFilter(val); setPage(1); }}>
+              <Select value={statusFilter} onValueChange={val => { setStatusFilter(val as string); setPage(1); }}>
                 <SelectTrigger className="w-[160px] h-9 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
