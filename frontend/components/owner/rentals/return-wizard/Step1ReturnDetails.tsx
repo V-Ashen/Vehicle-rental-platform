@@ -36,7 +36,7 @@ interface Step1ReturnDetailsProps {
 const FUEL_LEVELS = ["Full", "3/4", "1/2", "1/4", "Empty"];
 
 export default function Step1ReturnDetails({ rentalData }: Step1ReturnDetailsProps) {
-  const { control, watch } = useFormContext<ReturnWizardFormValues>();
+  const { control, watch, setValue, getValues } = useFormContext<ReturnWizardFormValues>();
   const [timeStr, setTimeStr] = useState(format(new Date(), "HH:mm"));
 
   const startOdo = rentalData?.startOdometer || 0;
@@ -102,15 +102,13 @@ export default function Step1ReturnDetails({ rentalData }: Step1ReturnDetailsPro
               value={timeStr}
               onChange={(e) => {
                 setTimeStr(e.target.value);
-                const currentVal = control._formValues.actualReturnAt as Date;
+                const currentVal = getValues("actualReturnAt");
                 if (currentVal && e.target.value) {
                   const newDate = new Date(currentVal);
                   const [hours, minutes] = e.target.value.split(":");
                   newDate.setHours(parseInt(hours, 10));
                   newDate.setMinutes(parseInt(minutes, 10));
-                  // Using internal methods here because we aren't registering the time field itself
-                  // Instead we patch the actualReturnAt value
-                  control._formValues.actualReturnAt = newDate; 
+                  setValue("actualReturnAt", newDate, { shouldValidate: true, shouldDirty: true });
                 }
               }}
               className="bg-white dark:bg-slate-950"
@@ -130,7 +128,8 @@ export default function Step1ReturnDetails({ rentalData }: Step1ReturnDetailsPro
                   <Input 
                     type="number" 
                     placeholder="e.g. 52000" 
-                    {...field} 
+                    value={field.value === 0 ? "" : field.value}
+                    onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number(e.target.value))}
                     className={cn(
                       "bg-white dark:bg-slate-950 pr-12",
                       currentEndOdo < startOdo && "border-red-500 focus-visible:ring-red-500"

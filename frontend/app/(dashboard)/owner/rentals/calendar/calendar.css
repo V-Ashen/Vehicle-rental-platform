@@ -34,27 +34,9 @@
 .rbc-row-content {
   z-index: 4;
 }
-.rbc-event {
-  border-radius: 50% !important;
-  width: 8px !important;
-  height: 8px !important;
-  padding: 0 !important;
-  margin: 2px auto !important;
-  border: none !important;
-  box-shadow: none !important;
-  display: inline-block !important;
-  text-indent: -9999px;
-  overflow: hidden;
-}
-.rbc-event-content {
-  display: none;
-}
-.rbc-event-label {
-  display: none;
-}
-.rbc-row-segment {
-  display: flex;
-  justify-content: center;
+/* Hide the default event rows completely, as we render circles in the date cells now */
+.rbc-row-content .rbc-row:not(:first-child) {
+  display: none !important;
 }
 .rbc-today {
   background-color: transparent !important;

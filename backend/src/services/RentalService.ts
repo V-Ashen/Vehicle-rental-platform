@@ -75,17 +75,22 @@ export class RentalService {
       // Fetch related vehicle
       const vehicle = await vehicleRepo.findById(rental.vehicleId, tenantId);
 
-      // Fetch related pickup handover to get startOdometer
-      const handoverQuery = await db.collection('rentalHandovers')
+      // Fetch related customer
+      const customer = await customerRepo.findById(rental.customerId, tenantId);
+
+      // Fetch handovers
+      const handoversQuery = await db.collection('rentalHandovers')
         .where('rentalId', '==', rentalId)
-        .where('type', '==', 'PICKUP')
-        .limit(1)
         .get();
 
       let pickupHandover = null;
-      if (!handoverQuery.empty) {
-        pickupHandover = handoverQuery.docs[0].data();
-      }
+      let returnHandover = null;
+      
+      handoversQuery.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.type === 'PICKUP') pickupHandover = data;
+        if (data.type === 'RETURN') returnHandover = data;
+      });
 
       return {
         ...rental,
@@ -96,8 +101,10 @@ export class RentalService {
         updatedAt: rental.updatedAt?.toDate?.()?.toISOString() || rental.updatedAt,
         vehicleRegistration: vehicle?.registrationNumber || 'Unknown',
         vehicleMakeModel: `${vehicle?.make || ''} ${vehicle?.model || ''}`.trim(),
+        customerName: customer?.fullName || 'Unknown',
         startOdometer: pickupHandover?.odometer || 0,
-        pickupHandover
+        pickupHandover,
+        returnHandover
       };
     } catch (e: any) {
       if (e instanceof AppError) throw e;
@@ -403,6 +410,13 @@ export class RentalService {
         const vehicleRef = db.collection('vehicles').doc(rental.vehicleId);
         const vehicleDoc = await t.get(vehicleRef);
         if (!vehicleDoc.exists) throw new AppError('Vehicle not found', 'NOT_FOUND', 404);
+        const vehicleDataObj = vehicleDoc.data();
+
+        // Fetch Tenant for Owner ID
+        const tenantRef = db.collection('tenants').doc(tenantId);
+        const tenantDoc = await t.get(tenantRef);
+        const tenantData = tenantDoc.data();
+
 
         // 3. Fetch Pickup Handover for startOdometer
         const handoverQuery = db.collection('rentalHandovers')
@@ -552,13 +566,38 @@ export class RentalService {
           });
         }
 
+        // Task C: Tracked Parts
+        const trackedParts = vehicleDataObj?.trackedParts || [];
+        let trackedPartsUpdated = false;
+
+        const updatedTrackedParts = trackedParts.map((part: any) => {
+          if (endOdometer >= (part.replacedAtOdometer + part.lifespanKm) && !part.alertTriggered) {
+            trackedPartsUpdated = true;
+            // Queue Notification (Fire and forget, but here we can't easily await inside map safely, so we just push to a list)
+            notificationService.queueNotification(tenantId, tenantData?.ownerUserId || 'UNKNOWN', {
+              type: 'MAINTENANCE_ALERT',
+              channel: 'EMAIL',
+              subject: `Maintenance Alert: ${part.partName} on ${vehicleDataObj?.registrationNumber}`,
+              message: `The ${part.partName} on vehicle ${vehicleDataObj?.registrationNumber} has reached its expected lifespan. Please schedule maintenance.`
+            }).catch(console.error);
+            return { ...part, alertTriggered: true };
+          }
+          return part;
+        });
+
         // Update Vehicle
-        t.update(vehicleRef, {
+        const vehicleUpdatePayload: any = {
           currentOdometer: endOdometer,
           status: requiresMaintenance ? 'MAINTENANCE' : 'AVAILABLE',
           updatedAt: new Date(),
           updatedBy: userId
-        });
+        };
+        
+        if (trackedPartsUpdated) {
+          vehicleUpdatePayload.trackedParts = updatedTrackedParts;
+        }
+
+        t.update(vehicleRef, vehicleUpdatePayload);
 
         // Update Rental
         t.update(rentalRef, {

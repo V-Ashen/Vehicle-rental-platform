@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useState, use } from "react";
 import VehicleDocumentsTab from "@/components/owner/vehicles/VehicleDocumentsTab";
+import VehicleTrackedPartsTab from "@/components/owner/vehicles/VehicleTrackedPartsTab";
 
 export default function VehicleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = use(params);
@@ -138,6 +139,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
           <TabsList className="mb-6 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
+            <TabsTrigger value="tracked-parts">Tracked Parts</TabsTrigger>
           </TabsList>
           
           <TabsContent value="overview">
@@ -258,6 +260,10 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
       
       <TabsContent value="documents">
         <VehicleDocumentsTab vehicleId={vehicleId} />
+      </TabsContent>
+      
+      <TabsContent value="tracked-parts">
+        <VehicleTrackedPartsTab vehicleId={vehicleId} />
       </TabsContent>
       
       </Tabs>

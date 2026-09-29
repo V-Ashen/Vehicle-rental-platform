@@ -112,6 +112,12 @@ export default function RentalDetailsPage({ params }: { params: Promise<{ id: st
                 <p className="text-base font-semibold text-slate-900 dark:text-white">
                   {format(new Date(rental.actualReturnAt), "MMM d, yyyy h:mm a")}
                 </p>
+                {rental.returnHandover && (
+                  <p className="text-sm text-slate-500 mt-2 flex items-center">
+                    <Settings className="w-4 h-4 mr-1" />
+                    Closing Odometer: {rental.returnHandover.odometer} km
+                  </p>
+                )}
               </div>
             )}
           </div>

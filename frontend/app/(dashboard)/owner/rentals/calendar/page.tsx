@@ -76,25 +76,46 @@ export default function RentalsCalendarPage() {
     fetchRentals();
   }, [toast]);
 
-  const eventStyleGetter = (event: any) => {
-    let backgroundColor = '#6366f1'; // indigo-500
-    if (event.status === 'ON_RENT') backgroundColor = '#10b981'; // emerald-500
-    if (event.status === 'RESERVED') backgroundColor = '#f59e0b'; // amber-500
-    if (event.status === 'COMPLETED') backgroundColor = '#64748b'; // slate-500
-    if (event.status === 'CANCELLED') backgroundColor = '#ef4444'; // red-500
+  // Custom Date Header to circle dates and show tooltips
+  const CustomDateHeader = (props: any) => {
+    const { label, date } = props;
+    
+    // Find if this date is within any event
+    const dayEvents = events.filter(e => {
+      const d = new Date(date).setHours(0,0,0,0);
+      const start = new Date(e.start).setHours(0,0,0,0);
+      const end = new Date(e.end).setHours(0,0,0,0);
+      return d >= start && d <= end;
+    });
 
-    return {
-      style: {
-        backgroundColor,
-        borderRadius: '50%',
-        width: '8px',
-        height: '8px',
-        display: 'inline-block',
-        border: 'none',
-        margin: '2px',
-        padding: '0'
-      }
-    };
+    const event = dayEvents[0];
+    let borderColor = 'transparent';
+    let title = '';
+
+    if (event) {
+      title = `${event.title} - ${event.status}`;
+      borderColor = '#6366f1'; // indigo-500
+      if (event.status === 'ON_RENT') borderColor = '#10b981';
+      if (event.status === 'RESERVED') borderColor = '#f59e0b';
+      if (event.status === 'COMPLETED') borderColor = '#64748b';
+      if (event.status === 'CANCELLED') borderColor = '#ef4444';
+    }
+
+    return (
+      <div 
+        title={title}
+        className="mx-auto flex items-center justify-center transition-all hover:bg-slate-100 dark:hover:bg-slate-800"
+        style={{ 
+          width: '32px', 
+          height: '32px', 
+          borderRadius: '50%', 
+          border: event ? `2px solid ${borderColor}` : '2px solid transparent',
+          cursor: event ? 'pointer' : 'inherit'
+        }}
+      >
+        {label}
+      </div>
+    );
   };
 
   const CustomToolbar = (toolbar: any) => {
@@ -156,11 +177,13 @@ export default function RentalsCalendarPage() {
             startAccessor="start"
             endAccessor="end"
             style={{ height: 500 }}
-            eventPropGetter={eventStyleGetter}
             views={['month']}
             defaultView="month"
             components={{
               toolbar: CustomToolbar,
+              month: {
+                dateHeader: CustomDateHeader,
+              }
             }}
             formats={{
               monthHeaderFormat: 'MMMM yyyy',

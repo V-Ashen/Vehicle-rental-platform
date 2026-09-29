@@ -1,27 +1,36 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Search, CalendarClock } from "lucide-react";
+import { Plus, Search, CalendarClock, Calendar, ChevronRight, ArrowUpRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { PaginationControl } from '@/components/ui/pagination-control';
+import { PaginationControl } from "@/components/ui/pagination-control";
+import { cn } from "cn";
+
+function StatusPill({ status }: { status: string }) {
+  const config: Record<string, { label: string; cls: string }> = {
+    RESERVED:  { label: "Reserved",  cls: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800/50" },
+    ON_RENT:   { label: "On Rent",   cls: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/50" },
+    COMPLETED: { label: "Completed", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50" },
+    CANCELLED: { label: "Cancelled", cls: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800/50" },
+  };
+  const c = config[status] ?? { label: status, cls: "bg-slate-100 text-slate-600 border-slate-200" };
+  return (
+    <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border", c.cls)}>
+      {c.label}
+    </span>
+  );
+}
 
 export default function RentalsPage() {
   const router = useRouter();
@@ -41,71 +50,54 @@ export default function RentalsPage() {
 
   const rentals = Array.isArray(responseData) ? responseData : (responseData?.data || []);
 
-  const filteredRentals = rentals.filter((rental: any) => 
-    rental.rentalNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    rental.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    rental.vehicleRegistration?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredRentals = rentals.filter((r: any) =>
+    r.rentalNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.vehicleRegistration?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const cancelRentalMutation = useMutation({
-    mutationFn: async (rentalId: string) => {
-      await apiClient.post(`/rentals/${rentalId}/cancel`);
-    },
+  const cancelMutation = useMutation({
+    mutationFn: async (id: string) => apiClient.post(`/rentals/${id}/cancel`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["owner-rentals"] });
       queryClient.invalidateQueries({ queryKey: ["owner-vehicles"] });
-      toast({
-        title: "Rental Cancelled",
-        description: "The reservation has been cancelled and the vehicle is now available.",
-      });
+      toast({ title: "Rental Cancelled", description: "The vehicle is now available." });
     },
-    onError: (error: any) => {
-      toast({
-        title: "Action Failed",
-        description: error.response?.data?.message || "Failed to cancel the rental.",
-        variant: "destructive"
-      });
-    }
+    onError: (e: any) => toast({ title: "Failed", description: e.response?.data?.message || "Error", variant: "destructive" }),
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'RESERVED':
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-yellow-200">Reserved</Badge>;
-      case 'ON_RENT':
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-200">On Rent</Badge>;
-      case 'COMPLETED':
-        return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-emerald-200">Completed</Badge>;
-      case 'CANCELLED':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">Cancelled</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
+  const paged = filteredRentals.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  // Summary counts
+  const onRentCount = rentals.filter((r: any) => r.status === "ON_RENT").length;
+  const reservedCount = rentals.filter((r: any) => r.status === "RESERVED").length;
+  const overdueCount = rentals.filter((r: any) => {
+    if (r.status !== "ON_RENT") return false;
+    const exp = r.expectedReturnAt ? new Date(r.expectedReturnAt) : null;
+    return exp && exp < new Date();
+  }).length;
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center">
-            <CalendarClock className="w-8 h-8 mr-3 text-indigo-600" />
-            Rentals
-          </h1>
-          <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Manage reservations and active rentals.
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Rentals</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            {rentals.length} total · {onRentCount} on rent · {reservedCount} reserved
           </p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <Link href="/owner/rentals/calendar">
-            <Button variant="outline" className="w-full sm:w-auto border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">
-              <CalendarClock className="w-4 h-4 mr-2" />
-              View Calendar
+            <Button variant="outline" className="gap-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+              <Calendar className="w-4 h-4" />
+              Calendar
             </Button>
           </Link>
           <RequirePermission permission="rentals.create">
             <Link href="/owner/rentals/new">
-              <Button className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">
-                <Plus className="w-4 h-4 mr-2" />
+              <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                <Plus className="w-4 h-4" />
                 New Rental
               </Button>
             </Link>
@@ -113,145 +105,148 @@ export default function RentalsPage() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-          <div className="relative max-w-md">
+      {/* Quick stats */}
+      {overdueCount > 0 && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-2xl">
+          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+          <p className="text-sm font-medium text-red-700 dark:text-red-300">
+            {overdueCount} rental{overdueCount > 1 ? "s" : ""} overdue — vehicle{overdueCount > 1 ? "s" : ""} not yet returned
+          </p>
+          <ChevronRight className="w-4 h-4 text-red-400 ml-auto" />
+        </div>
+      )}
+
+      {/* Table card */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        {/* Search bar */}
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+          <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder="Search by rental #, customer, or vehicle..." 
+            <Input
+              placeholder="Search rental, customer, vehicle…"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-white dark:bg-slate-900"
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+              className="pl-9 h-9 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-800 transition-colors"
             />
           </div>
         </div>
-        
+
         <div className="overflow-x-auto">
-          <Table className="w-full whitespace-nowrap">
-            <TableHeader className="bg-slate-50 dark:bg-slate-800">
-              <TableRow>
-                <TableHead>Rental #</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Vehicle</TableHead>
-                <TableHead>Dates</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Balance</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50/80 dark:bg-slate-800/40 hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                <TableHead className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Rental #</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Customer</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Vehicle</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pickup → Return</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Amount</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 7 }).map((_, j) => (
+                      <TableCell key={j}><div className="h-4 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" /></TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : paged.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
-                      <p className="text-slate-500">Loading rentals...</p>
+                  <TableCell colSpan={7} className="text-center py-16">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                        <CalendarClock className="w-7 h-7 text-slate-400" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900 dark:text-white">No rentals found</p>
+                        <p className="text-sm text-slate-500 mt-0.5">
+                          {searchQuery ? "Try a different search" : "Create your first rental to get started"}
+                        </p>
+                      </div>
+                      {!searchQuery && (
+                        <Link href="/owner/rentals/new">
+                          <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 gap-2">
+                            <Plus className="w-4 h-4" /> New Rental
+                          </Button>
+                        </Link>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : filteredRentals.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-slate-500">
-                    <CalendarClock className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <p className="text-lg font-medium text-slate-900 dark:text-white mb-1">No rentals found</p>
-                    <p>Get started by creating a new rental reservation.</p>
-                  </TableCell>
-                </TableRow>
               ) : (
-                filteredRentals.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((rental: any) => (
-                  <TableRow 
+                paged.map((rental: any) => (
+                  <TableRow
                     key={rental.id}
-                    className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors border-slate-100 dark:border-slate-800"
+                    onClick={() => router.push(`/owner/rentals/${rental.id}`)}
                   >
-                    <TableCell className="font-medium text-indigo-600 dark:text-indigo-400">
-                      {rental.rentalNumber}
+                    <TableCell>
+                      <span className="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-lg">
+                        {rental.rentalNumber}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                          {(rental.customerName || "?").charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-sm font-medium text-slate-900 dark:text-white">{rental.customerName || "—"}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-slate-600 dark:text-slate-300">{rental.vehicleRegistration || "—"}</span>
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <p className="font-medium text-slate-900 dark:text-white">{rental.customerName}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-slate-600 dark:text-slate-400">
-                        {rental.vehicleRegistration}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <p className="text-slate-900 dark:text-white">
-                          {rental.pickupAt ? format(new Date(rental.pickupAt), "MMM d, yyyy") : 'N/A'}
+                        <p className="text-slate-900 dark:text-white font-medium">
+                          {rental.pickupAt ? format(new Date(rental.pickupAt), "MMM d, yyyy") : "—"}
                         </p>
-                        <p className="text-slate-500 text-xs">
-                          to {rental.expectedReturnAt ? format(new Date(rental.expectedReturnAt), "MMM d, yyyy") : 'N/A'}
+                        <p className="text-xs text-slate-500">
+                          → {rental.expectedReturnAt ? format(new Date(rental.expectedReturnAt), "MMM d, yyyy") : "—"}
                         </p>
                       </div>
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(rental.status)}
+                      <StatusPill status={rental.status} />
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="text-sm font-medium text-slate-900 dark:text-white">
-                        Rs. {rental.totalCost?.toLocaleString() || 0}
-                      </div>
-                      <div className="text-xs text-red-500">
-                        Bal: Rs. {rental.balanceDue?.toLocaleString() || 0}
-                      </div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                        Rs. {(rental.totalAmount || 0).toLocaleString()}
+                      </p>
+                      {(rental.balanceDue ?? 0) > 0 && (
+                        <p className="text-xs text-red-500">Bal: Rs. {rental.balanceDue.toLocaleString()}</p>
+                      )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      {rental.status === 'ON_RENT' ? (
-                        <RequirePermission 
-                          permission="rentals.process_return"
-                          fallback={
-                            <Button variant="ghost" size="sm" onClick={() => router.push(`/owner/rentals/${rental.id}`)}>
-                              View Details
-                            </Button>
-                          }
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      {rental.status === "ON_RENT" ? (
+                        <Button
+                          size="sm"
+                          className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800/50 shadow-none gap-1"
+                          onClick={() => router.push(`/owner/rentals/${rental.id}/return`)}
                         >
+                          Return <ArrowUpRight className="w-3 h-3" />
+                        </Button>
+                      ) : rental.status === "RESERVED" ? (
+                        <div className="flex justify-end gap-1.5">
+                          <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 h-8 px-2" onClick={() => router.push(`/owner/rentals/${rental.id}`)}>View</Button>
                           <Button
-                            variant="outline"
                             size="sm"
-                            className="bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100"
-                            onClick={() => router.push(`/owner/rentals/${rental.id}/return`)}
-                          >
-                            Process Return
-                          </Button>
-                        </RequirePermission>
-                      ) : rental.status === 'RESERVED' ? (
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push(`/owner/rentals/${rental.id}`)}
-                          >
-                            View
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                            onClick={() => {
-                              toast({
-                                title: "Confirm Cancellation",
-                                description: "Are you sure you want to cancel this reservation?",
-                                action: {
-                                  label: "Cancel Rental",
-                                  onClick: () => cancelRentalMutation.mutate(rental.id)
-                                }
-                              });
-                            }}
-                            disabled={cancelRentalMutation.isPending}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50 border border-red-200 dark:border-red-800/50 bg-transparent shadow-none h-8 px-2 text-xs"
+                            disabled={cancelMutation.isPending}
+                            onClick={() => toast({
+                              title: "Confirm Cancellation",
+                              description: "Cancel this reservation?",
+                              action: { label: "Cancel Rental", onClick: () => cancelMutation.mutate(rental.id) }
+                            })}
                           >
                             Cancel
                           </Button>
                         </div>
                       ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => router.push(`/owner/rentals/${rental.id}`)}
-                        >
-                          View Details
-                        </Button>
+                        <Button variant="ghost" size="sm" className="text-slate-500 h-8 px-2" onClick={() => router.push(`/owner/rentals/${rental.id}`)}>View</Button>
                       )}
                     </TableCell>
                   </TableRow>
@@ -260,13 +255,9 @@ export default function RentalsPage() {
             </TableBody>
           </Table>
         </div>
-        
-        {filteredRentals && filteredRentals.length > 0 && (
-          <PaginationControl 
-            currentPage={page}
-            totalPages={Math.ceil(filteredRentals.length / itemsPerPage)}
-            onPageChange={setPage}
-          />
+
+        {filteredRentals.length > itemsPerPage && (
+          <PaginationControl currentPage={page} totalPages={Math.ceil(filteredRentals.length / itemsPerPage)} onPageChange={setPage} />
         )}
       </div>
     </div>

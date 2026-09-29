@@ -51,6 +51,7 @@ export default function NewRentalWizardPage() {
     defaultValues: {
       customerId: "",
       vehicleId: "",
+      odometer: 0,
       fuelLevel: "Full",
       conditionStatus: "GOOD",
       photoUrls: [],

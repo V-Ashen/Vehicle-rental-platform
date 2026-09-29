@@ -173,7 +173,12 @@ export default function Step2DamageCheck() {
                         <FormItem>
                           <FormLabel>Estimated Charge (Rs.)</FormLabel>
                           <FormControl>
-                            <Input type="number" placeholder="0" {...field} />
+                            <Input 
+                              type="number" 
+                              placeholder="0" 
+                              value={field.value === 0 ? "" : field.value}
+                              onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number(e.target.value))}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
