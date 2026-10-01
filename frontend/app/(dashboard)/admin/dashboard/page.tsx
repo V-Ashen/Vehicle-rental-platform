@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
-import { Clock } from 'lucide-react';
+import { 
+  Building2, CreditCard, TrendingUp, AlertTriangle,
+  Clock, Activity, ChevronRight, BarChart3
+} from 'lucide-react';
 
 export default function AdminDashboard() {
   const [metrics, setMetrics] = useState<any>(null);
@@ -26,82 +29,145 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex space-x-4 animate-pulse">
-        {[1,2,3,4].map(i => (
-          <div key={i} className="bg-slate-200 dark:bg-slate-700 h-32 w-full rounded-xl"></div>
-        ))}
+      <div className="space-y-6 animate-pulse">
+        <div className="h-8 w-64 bg-slate-800 rounded-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="bg-slate-800/60 h-36 rounded-2xl border border-slate-700/50" />
+          ))}
+        </div>
+        <div className="bg-slate-800/60 h-96 rounded-2xl border border-slate-700/50" />
       </div>
     );
   }
 
   if (error) {
-    return <div className="text-red-500 font-medium p-4 bg-red-50 rounded-xl border border-red-100">{error}</div>;
+    return (
+      <div className="flex items-center gap-3 p-5 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400">
+        <AlertTriangle className="w-5 h-5 shrink-0" />
+        <span className="font-medium">{error}</span>
+      </div>
+    );
   }
 
   const statCards = [
-    { title: 'Total Businesses', value: metrics?.totalBusinesses || 0, color: 'bg-blue-50 text-blue-700 border-blue-200' },
-    { title: 'Active Subscriptions', value: metrics?.totalActiveSubscriptions || 0, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-    { title: 'Trial Businesses', value: metrics?.trialBusinesses || 0, color: 'bg-amber-50 text-amber-700 border-amber-200' },
-    { title: 'Suspended Accounts', value: metrics?.suspendedBusinesses || 0, color: 'bg-red-50 text-red-700 border-red-200' },
+    { 
+      title: 'Total Businesses', 
+      value: metrics?.totalBusinesses || 0, 
+      icon: Building2,
+      gradient: 'from-blue-600 to-blue-400',
+      glow: 'shadow-blue-500/20',
+      bg: 'bg-blue-500/10',
+      border: 'border-blue-500/20',
+      text: 'text-blue-400'
+    },
+    { 
+      title: 'Active Subscriptions', 
+      value: metrics?.totalActiveSubscriptions || 0, 
+      icon: TrendingUp,
+      gradient: 'from-emerald-600 to-emerald-400',
+      glow: 'shadow-emerald-500/20',
+      bg: 'bg-emerald-500/10',
+      border: 'border-emerald-500/20',
+      text: 'text-emerald-400'
+    },
+    { 
+      title: 'Trial Businesses', 
+      value: metrics?.trialBusinesses || 0, 
+      icon: BarChart3,
+      gradient: 'from-amber-600 to-amber-400',
+      glow: 'shadow-amber-500/20',
+      bg: 'bg-amber-500/10',
+      border: 'border-amber-500/20',
+      text: 'text-amber-400'
+    },
+    { 
+      title: 'Suspended Accounts', 
+      value: metrics?.suspendedBusinesses || 0, 
+      icon: AlertTriangle,
+      gradient: 'from-rose-600 to-rose-400',
+      glow: 'shadow-rose-500/20',
+      bg: 'bg-rose-500/10',
+      border: 'border-rose-500/20',
+      text: 'text-rose-400'
+    },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-12">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Platform Overview</h1>
-        <p className="mt-2 text-slate-600 dark:text-slate-400">High-level metrics for your SaaS platform.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-white">Platform Overview</h1>
+        <p className="mt-1 text-slate-400 text-sm">High-level metrics for your SaaS platform.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat, i) => (
-          <div key={i} className={`p-6 rounded-2xl border shadow-sm ${stat.color} transition-all hover:shadow-md`}>
-            <h3 className="text-sm font-semibold uppercase tracking-wider opacity-80">{stat.title}</h3>
-            <p className="mt-4 text-4xl font-extrabold tracking-tight">{stat.value}</p>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        {statCards.map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <div key={i} className={`relative overflow-hidden rounded-2xl border ${stat.border} ${stat.bg} backdrop-blur-sm p-6 shadow-lg ${stat.glow} transition-all hover:scale-[1.02] hover:shadow-xl`}>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{stat.title}</p>
+                <div className={`w-9 h-9 rounded-xl ${stat.bg} border ${stat.border} flex items-center justify-center`}>
+                  <Icon className={`w-4.5 h-4.5 ${stat.text}`} />
+                </div>
+              </div>
+              <p className={`text-4xl font-extrabold tracking-tight ${stat.text}`}>{stat.value}</p>
+              {/* Decorative gradient orb */}
+              <div className={`absolute -bottom-4 -right-4 w-24 h-24 rounded-full bg-gradient-to-br ${stat.gradient} opacity-10 blur-xl`} />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-slate-900/60 backdrop-blur-sm rounded-2xl border border-slate-800/60 shadow-xl overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-800/60">
+          <div className="w-8 h-8 rounded-lg bg-rose-500/15 border border-rose-500/20 flex items-center justify-center">
+            <Activity className="w-4 h-4 text-rose-400" />
           </div>
-        ))}
-      </div>
-
-      <div className="mt-8 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Recent Activity</h2>
+          <h2 className="text-base font-semibold text-white">Recent Activity</h2>
+        </div>
         
         {metrics?.activity && metrics.activity.length > 0 ? (
-          <div className="space-y-4">
+          <div className="divide-y divide-slate-800/60">
             {metrics.activity.map((item: any) => (
-              <div key={`${item.type}-${item.id}`} className="flex items-start p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border border-transparent hover:border-slate-100 dark:hover:border-slate-700">
-                <div className={`p-2 rounded-full mr-4 ${item.type === 'TENANT' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
+              <div key={`${item.type}-${item.id}`} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-800/30 transition-colors group">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${item.type === 'TENANT' ? 'bg-blue-500/15 border border-blue-500/20' : 'bg-purple-500/15 border border-purple-500/20'}`}>
                   {item.type === 'TENANT' ? (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1v1H9V7zm5 0h1v1h-1V7zm-5 4h1v1H9v-1zm5 0h1v1h-1v-1zm-5 4h1v1H9v-1zm5 0h1v1h-1v-1z" /></svg>
+                    <Building2 className="w-4 h-4 text-blue-400" />
                   ) : (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <CreditCard className="w-4 h-4 text-purple-400" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                    {item.title}
-                  </p>
-                  <p className="text-sm text-slate-500 truncate">
-                    {item.description}
-                  </p>
+                  <p className="text-sm font-medium text-slate-200 truncate">{item.title}</p>
+                  <p className="text-xs text-slate-500 truncate">{item.description}</p>
                 </div>
-                <div className="flex flex-col items-end space-y-2 ml-4">
-                  <Badge variant="outline" className={
-                    item.status === 'ACTIVE' || item.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                    item.status === 'SUSPENDED' || item.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200' :
-                    'bg-slate-100 text-slate-700'
+                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                  <Badge className={
+                    item.status === 'ACTIVE' || item.status === 'APPROVED' 
+                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20 text-xs' :
+                    item.status === 'SUSPENDED' || item.status === 'REJECTED' 
+                      ? 'bg-rose-500/15 text-rose-400 border-rose-500/20 text-xs' :
+                      'bg-slate-700/50 text-slate-400 border-slate-600/50 text-xs'
                   }>
                     {item.status}
                   </Badge>
-                  <span className="flex items-center text-xs text-slate-400">
+                  <span className="flex items-center text-xs text-slate-600">
                     <Clock className="w-3 h-3 mr-1" />
                     {new Date(item.timestamp).toLocaleDateString()}
                   </span>
                 </div>
+                <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors" />
               </div>
             ))}
           </div>
         ) : (
-          <div className="mt-6 flex items-center justify-center h-48 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
-            <p className="text-slate-500 font-medium">No recent activity found.</p>
+          <div className="flex flex-col items-center justify-center h-52 text-center">
+            <Activity className="w-10 h-10 text-slate-700 mb-3" />
+            <p className="text-slate-500 font-medium text-sm">No recent activity found.</p>
           </div>
         )}
       </div>

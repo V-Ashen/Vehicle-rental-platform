@@ -273,7 +273,12 @@ export class RentalService {
         type: 'BOOKING_CONFIRMATION',
         channel: 'EMAIL',
         subject: 'Your Booking is Confirmed!',
-        message: `Dear ${customer.fullName}, your booking for ${vehicleData ? `${vehicleData.make} ${vehicleData.model}` : 'Vehicle'} is confirmed from ${pickupDate.toLocaleString()} to ${returnDate.toLocaleString()}.`
+        message: `Dear ${customer.fullName}, your booking for ${vehicleData ? `${vehicleData.make} ${vehicleData.model}` : 'Vehicle'} is confirmed from ${pickupDate.toLocaleString()} to ${returnDate.toLocaleString()}.`,
+        vehicleName: vehicleData ? `${vehicleData.make} ${vehicleData.model} (${vehicleData.registrationNumber})` : 'Vehicle',
+        pickupDate: pickupDate.toLocaleString(),
+        dropoffDate: returnDate.toLocaleString(),
+        customerName: customer.fullName,
+        businessName: businessName
       }).catch(err => console.error('Failed to queue notification', err));
 
       return createdRental;

@@ -6,7 +6,7 @@ const notificationRepo = new NotificationRepository();
 const tenantRepo = new TenantRepository();
 
 export class NotificationService {
-  async queueNotification(tenantId: string, userId: string, payload: { type: string, channel: 'EMAIL' | 'SMS', subject: string, message: string }) {
+  async queueNotification(tenantId: string, userId: string, payload: { type: string, channel: 'EMAIL' | 'SMS', subject: string, message: string, [key: string]: any }) {
     if (tenantId) {
       const tenant = await tenantRepo.findById(tenantId);
       if (tenant) {

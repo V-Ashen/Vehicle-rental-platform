@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api';
 import { format } from 'date-fns';
+import { History, ChevronLeft, ChevronRight, Loader2, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 export default function AdminPaymentHistory() {
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // Pagination State
   const [cursorStack, setCursorStack] = useState<string[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
 
@@ -27,9 +28,7 @@ export default function AdminPaymentHistory() {
     }
   };
 
-  useEffect(() => {
-    fetchPayments();
-  }, []);
+  useEffect(() => { fetchPayments(); }, []);
 
   const handleNextPage = () => {
     if (nextCursor) {
@@ -42,82 +41,86 @@ export default function AdminPaymentHistory() {
     const newStack = [...cursorStack];
     newStack.pop();
     setCursorStack(newStack);
-    
     const prevCursor = newStack.length > 0 ? newStack[newStack.length - 1] : undefined;
     fetchPayments(prevCursor);
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'SUCCESS':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Success</span>;
-      case 'PENDING':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Pending</span>;
-      case 'FAILED':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>;
-      case 'REFUNDED':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">Refunded</span>;
-      default:
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{status}</span>;
+      case 'SUCCESS': return <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20 text-xs">Success</Badge>;
+      case 'PENDING': return <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-xs">Pending</Badge>;
+      case 'FAILED': return <Badge className="bg-rose-500/15 text-rose-400 border-rose-500/20 text-xs">Failed</Badge>;
+      case 'REFUNDED': return <Badge className="bg-slate-500/15 text-slate-400 border-slate-500/20 text-xs">Refunded</Badge>;
+      default: return <Badge className="bg-slate-700/50 text-slate-400 border-slate-600/50 text-xs">{status}</Badge>;
     }
   };
 
+  const getMethodBadge = (method: string) => (
+    <span className="text-xs font-medium px-2 py-1 rounded-lg bg-slate-800/80 text-slate-400 border border-slate-700/50">
+      {method}
+    </span>
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Payment History</h1>
-        <p className="mt-2 text-slate-600 dark:text-slate-400">Master ledger of all transactions across the platform.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/20 flex items-center justify-center">
+            <History className="w-5 h-5 text-indigo-400" />
+          </div>
+          Payment History
+        </h1>
+        <p className="mt-1.5 text-sm text-slate-400">Master ledger of all transactions across the platform.</p>
       </div>
 
-      {error && <div className="text-red-500 font-medium p-4 bg-red-50 dark:bg-red-500/10 rounded-xl border border-red-100 dark:border-red-500/20">{error}</div>}
+      {error && (
+        <div className="flex items-center gap-3 p-5 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400">
+          <AlertTriangle className="w-5 h-5 shrink-0" />
+          <span className="font-medium text-sm">{error}</span>
+        </div>
+      )}
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+      {/* Table */}
+      <div className="bg-slate-900/60 backdrop-blur-sm rounded-2xl border border-slate-800/60 shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
-            <thead className="bg-slate-50 dark:bg-slate-800/50">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Payment ID</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Business</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Package</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Method</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+          <table className="min-w-full">
+            <thead>
+              <tr className="border-b border-slate-800/60">
+                {['Payment ID', 'Business', 'Package', 'Amount', 'Method', 'Status', 'Date'].map(h => (
+                  <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-widest">{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
+            <tbody className="divide-y divide-slate-800/40">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
-                    <div className="flex justify-center items-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                    </div>
+                  <td colSpan={7} className="py-20 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-indigo-400 mx-auto" />
                   </td>
                 </tr>
               ) : payments.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500 font-medium">No payments found.</td>
+                  <td colSpan={7} className="py-20 text-center">
+                    <History className="w-10 h-10 text-slate-700 mx-auto mb-3" />
+                    <p className="text-slate-500 text-sm font-medium">No payments found.</p>
+                  </td>
                 </tr>
               ) : (
                 payments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600 dark:text-indigo-400">{payment.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-white">{payment.tenantName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{payment.packageName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
-                      {payment.amount} {payment.currency}
+                  <tr key={payment.id} className="hover:bg-slate-800/30 transition-colors">
+                    <td className="px-6 py-4 text-xs font-mono text-indigo-400 whitespace-nowrap">{payment.id}</td>
+                    <td className="px-6 py-4 text-sm font-semibold text-slate-200 whitespace-nowrap">{payment.tenantName}</td>
+                    <td className="px-6 py-4 text-sm text-slate-400 whitespace-nowrap">{payment.packageName}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-emerald-400 font-bold">LKR {payment.amount?.toLocaleString()}</span>
+                      <span className="text-slate-600 text-xs ml-1">{payment.currency}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                      <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-md font-medium text-xs border border-slate-200 dark:border-slate-700">
-                        {payment.method}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {getStatusBadge(payment.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
-                      {payment.createdAt?._seconds 
-                        ? format(new Date(payment.createdAt._seconds * 1000), 'MMM d, yyyy h:mm a') 
+                    <td className="px-6 py-4 whitespace-nowrap">{getMethodBadge(payment.method)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(payment.status)}</td>
+                    <td className="px-6 py-4 text-xs text-slate-500 whitespace-nowrap">
+                      {payment.createdAt?._seconds
+                        ? format(new Date(payment.createdAt._seconds * 1000), 'MMM d, yyyy h:mm a')
                         : 'N/A'}
                     </td>
                   </tr>
@@ -126,26 +129,28 @@ export default function AdminPaymentHistory() {
             </tbody>
           </table>
         </div>
-        
-        {/* Pagination Controls */}
-        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
-          <button
-            onClick={handlePrevPage}
-            disabled={cursorStack.length === 0 || loading}
-            className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Previous
-          </button>
-          <span className="text-sm text-slate-500 dark:text-slate-400">
-            Page {cursorStack.length + 1}
-          </span>
-          <button
-            onClick={handleNextPage}
-            disabled={!nextCursor || loading}
-            className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Next
-          </button>
+
+        {/* Pagination */}
+        <div className="px-6 py-4 border-t border-slate-800/60 flex items-center justify-between">
+          <span className="text-sm text-slate-500">Page {cursorStack.length + 1}</span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline" size="sm"
+              onClick={handlePrevPage}
+              disabled={cursorStack.length === 0 || loading}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg disabled:opacity-40"
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+            </Button>
+            <Button
+              variant="outline" size="sm"
+              onClick={handleNextPage}
+              disabled={!nextCursor || loading}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg disabled:opacity-40"
+            >
+              Next <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
