@@ -148,15 +148,20 @@ export class CronService {
       const sub = doc.data();
       if (!sub.trialEndAt) continue;
 
+      const tenantDoc = await tenantsRef.doc(sub.tenantId).get();
+      const tenantData = tenantDoc.exists ? tenantDoc.data() : null;
+      
+      // Skip suspended or rejected tenants
+      if (!tenantData || tenantData.accountStatus === 'SUSPENDED' || tenantData.accountStatus === 'REJECTED') {
+        continue;
+      }
+
       const endDate = sub.trialEndAt.toDate ? sub.trialEndAt.toDate() : new Date(sub.trialEndAt);
       const diffDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
 
       // Reminders
       if ((diffDays === 7 || diffDays === 3 || diffDays === 1) && sub.lastReminderDays !== diffDays) {
-        const tenantDoc = await tenantsRef.doc(sub.tenantId).get();
-        const tenantData = tenantDoc.exists ? tenantDoc.data() : null;
-        
-        const tenantEmailEnabled = tenantData && tenantData.subscriptionEmailEnabled !== false;
+        const tenantEmailEnabled = tenantData.subscriptionEmailEnabled !== false;
         const sendEmail = globalAlertsEnabled && tenantEmailEnabled;
 
         const notifId = generateId(IdPrefix.NOTIFICATION);
@@ -243,8 +248,19 @@ export class CronService {
     const settingsDoc = await db.collection('systemSettings').doc('notifications').get();
     const rentalAndFleetAlertsEnabled = settingsDoc.exists ? settingsDoc.data()?.rentalAndFleetAlertsEnabled !== false : true;
 
+    const tenantCache: Record<string, boolean> = {};
+    const isTenantActive = async (tenantId: string) => {
+      if (tenantCache[tenantId] !== undefined) return tenantCache[tenantId];
+      const doc = await db.collection('tenants').doc(tenantId).get();
+      const data = doc.exists ? doc.data() : null;
+      tenantCache[tenantId] = data ? (data.accountStatus !== 'SUSPENDED' && data.accountStatus !== 'REJECTED') : false;
+      return tenantCache[tenantId];
+    };
+
     for (const doc of overdueQuery.docs) {
       const rental = doc.data();
+      if (!(await isTenantActive(rental.tenantId))) continue;
+      
       if (!rental.isOverdue) {
         batch.update(doc.ref, {
           isOverdue: true,
@@ -302,6 +318,8 @@ export class CronService {
 
     for (const doc of upcomingQuery.docs) {
       const rental = doc.data();
+      if (!(await isTenantActive(rental.tenantId))) continue;
+
       if (!rental.upcomingNotified) {
         batch.update(doc.ref, {
           upcomingNotified: true,
@@ -348,9 +366,19 @@ export class CronService {
     const settingsDoc = await db.collection('systemSettings').doc('notifications').get();
     const rentalAndFleetAlertsEnabled = settingsDoc.exists ? settingsDoc.data()?.rentalAndFleetAlertsEnabled !== false : true;
 
+    const tenantCache: Record<string, boolean> = {};
+    const isTenantActive = async (tenantId: string) => {
+      if (tenantCache[tenantId] !== undefined) return tenantCache[tenantId];
+      const doc = await db.collection('tenants').doc(tenantId).get();
+      const data = doc.exists ? doc.data() : null;
+      tenantCache[tenantId] = data ? (data.accountStatus !== 'SUSPENDED' && data.accountStatus !== 'REJECTED') : false;
+      return tenantCache[tenantId];
+    };
+
     for (const doc of activeDocs.docs) {
       const vDoc = doc.data();
       if (!vDoc.expiryDate) continue;
+      if (!(await isTenantActive(vDoc.tenantId))) continue;
 
       const endDate = vDoc.expiryDate.toDate ? vDoc.expiryDate.toDate() : new Date(vDoc.expiryDate);
       const diffDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
