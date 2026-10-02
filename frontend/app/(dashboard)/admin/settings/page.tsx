@@ -51,15 +51,15 @@ export default function AdminSettingsPage() {
   const settingItems = [
     {
       id: 'subscription',
-      title: 'Subscription Renewal Alerts',
-      description: 'Globally enable or disable the automated daily renewal reminders sent to SaaS tenants. Turn this off if you are exceeding your daily Resend API limits.',
+      title: 'Subscription Renewal Email Alerts',
+      description: 'Globally enable or disable automated email reminders sent to SaaS tenants. In-app notifications are always delivered.',
       checked: alertsEnabled,
       onChange: setAlertsEnabled,
     },
     {
       id: 'fleet',
-      title: 'Rental & Fleet Operation Alerts',
-      description: 'Globally enable or disable automated alerts for overdue rentals, upcoming pickups, and vehicle document expirations.',
+      title: 'Rental & Fleet Email Alerts',
+      description: 'Globally enable or disable automated emails for overdue rentals, upcoming pickups, and document expirations. In-app notifications are always delivered.',
       checked: fleetAlertsEnabled,
       onChange: setFleetAlertsEnabled,
     },

@@ -11,17 +11,35 @@ export class NotificationController {
       const { tenantId, id: uid } = dbUser;
       const isReadParam = req.query.isRead;
 
-      let query = db.collection('notifications')
+      const queryUser = db.collection('notifications')
         .where('tenantId', '==', tenantId)
-        .where('userId', '==', uid);
+        .where('userId', '==', uid)
+        .orderBy('createdAt', 'desc')
+        .limit(50);
+
+      const queryAdmin = db.collection('notifications')
+        .where('tenantId', '==', tenantId)
+        .where('userId', '==', 'TENANT_ADMIN')
+        .orderBy('createdAt', 'desc')
+        .limit(50);
+
+      const [snapUser, snapAdmin] = await Promise.all([queryUser.get(), queryAdmin.get()]);
+      
+      const allDocs = [...snapUser.docs, ...snapAdmin.docs];
+      let notifications = allDocs.map(doc => ({ id: doc.id, ...doc.data() as any }));
+
+      notifications.sort((a, b) => {
+        const timeA = a.createdAt?._seconds || 0;
+        const timeB = b.createdAt?._seconds || 0;
+        return timeB - timeA;
+      });
 
       if (isReadParam !== undefined) {
         const isRead = isReadParam === 'true';
-        query = query.where('isRead', '==', isRead);
+        notifications = notifications.filter(n => (n.isRead === true) === isRead);
       }
 
-      const snapshot = await query.orderBy('createdAt', 'desc').limit(50).get();
-      const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      notifications = notifications.slice(0, 50);
 
       res.status(200).json({ success: true, data: notifications });
     } catch (e: any) {
@@ -45,7 +63,7 @@ export class NotificationController {
       }
 
       const data = doc.data();
-      if (data?.tenantId !== tenantId || data?.userId !== uid) {
+      if (data?.tenantId !== tenantId || (data?.userId !== uid && data?.userId !== 'TENANT_ADMIN')) {
         throw new AppError('Notification not found', 'NOT_FOUND', 404);
       }
 

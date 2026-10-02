@@ -136,6 +136,9 @@ export class CronService {
 
     const activeQ = await subscriptionsRef.where('status', 'in', ['ACTIVE', 'TRIAL']).get();
 
+    const settingsDoc = await db.collection('systemSettings').doc('notifications').get();
+    const globalAlertsEnabled = settingsDoc.exists ? settingsDoc.data()?.subscriptionAlertsEnabled !== false : true;
+
     let remindersSent = 0;
     let expiredCount = 0;
 
@@ -150,39 +153,32 @@ export class CronService {
 
       // Reminders
       if ((diffDays === 7 || diffDays === 3 || diffDays === 1) && sub.lastReminderDays !== diffDays) {
-        // Global Setting check
-        const settingsDoc = await db.collection('systemSettings').doc('notifications').get();
-        const globalAlertsEnabled = settingsDoc.exists ? settingsDoc.data()?.subscriptionAlertsEnabled !== false : true;
+        const tenantDoc = await tenantsRef.doc(sub.tenantId).get();
+        const tenantData = tenantDoc.exists ? tenantDoc.data() : null;
+        
+        const tenantEmailEnabled = tenantData && tenantData.subscriptionEmailEnabled !== false;
+        const sendEmail = globalAlertsEnabled && tenantEmailEnabled;
 
-        if (globalAlertsEnabled) {
-          const tenantDoc = await tenantsRef.doc(sub.tenantId).get();
-          const tenantData = tenantDoc.exists ? tenantDoc.data() : null;
+        const notifId = generateId(IdPrefix.NOTIFICATION);
+        const notifRef = db.collection('notifications').doc(notifId);
 
-        if (tenantData && tenantData.subscriptionEmailEnabled !== false) {
-          const notifId = generateId(IdPrefix.NOTIFICATION);
-          const notifRef = db.collection('notifications').doc(notifId);
+        batch.set(notifRef, {
+          id: notifId,
+          tenantId: sub.tenantId,
+          userId: 'TENANT_ADMIN',
+          type: 'RENEWAL_REMINDER',
+          channel: sendEmail ? 'EMAIL' : 'APP',
+          subject: `Your subscription expires in ${diffDays} days!`,
+          message: `Please renew your subscription to avoid service interruption.`,
+          status: sendEmail ? 'QUEUED' : 'SENT',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: 'SYSTEM_CRON',
+          updatedBy: 'SYSTEM_CRON'
+        });
 
-          batch.set(notifRef, {
-            id: notifId,
-            tenantId: sub.tenantId,
-            userId: 'TENANT_ADMIN',
-            type: 'RENEWAL_REMINDER',
-            channel: 'EMAIL',
-            subject: `Your subscription expires in ${diffDays} days!`,
-            message: `Please renew your subscription to avoid service interruption.`,
-            status: 'QUEUED',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            createdBy: 'SYSTEM_CRON',
-            updatedBy: 'SYSTEM_CRON'
-          });
-
-          // Mark that this specific reminder (7, 3, or 1 days) has been sent so we don't spam it.
-          batch.update(doc.ref, { lastReminderDays: diffDays });
-          
-          remindersSent++;
-        }
-        }
+        batch.update(doc.ref, { lastReminderDays: diffDays });
+        remindersSent++;
       }
 
       // Expirations
@@ -210,10 +206,10 @@ export class CronService {
           tenantId: sub.tenantId,
           userId: 'TENANT_ADMIN',
           type: 'ACCOUNT_SUSPENDED',
-          channel: 'EMAIL',
+          channel: globalAlertsEnabled ? 'EMAIL' : 'APP',
           subject: `Account Suspended - Subscription Expired`,
           message: `Your account has been suspended due to an expired subscription. Please renew.`,
-          status: 'QUEUED',
+          status: globalAlertsEnabled ? 'QUEUED' : 'SENT',
           createdAt: new Date(),
           updatedAt: new Date(),
           createdBy: 'SYSTEM_CRON',
@@ -256,43 +252,41 @@ export class CronService {
           updatedBy: 'SYSTEM_CRON'
         });
 
-        if (rentalAndFleetAlertsEnabled) {
-          // Notify Customer
-          const notifId = generateId(IdPrefix.NOTIFICATION);
+        // Notify Customer
+        const notifId = generateId(IdPrefix.NOTIFICATION);
         const notifRef = db.collection('notifications').doc(notifId);
-          batch.set(notifRef, {
-            id: notifId,
-            tenantId: rental.tenantId,
-            userId: rental.customerId,
-            type: 'OVERDUE_ALERT',
-            channel: 'EMAIL',
-            subject: 'Rental Overdue Notice',
-            message: `Your rental is overdue! Please return the vehicle immediately to avoid additional late charges.`,
-            status: 'QUEUED',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            createdBy: 'SYSTEM_CRON',
-            updatedBy: 'SYSTEM_CRON'
-          });
+        batch.set(notifRef, {
+          id: notifId,
+          tenantId: rental.tenantId,
+          userId: rental.customerId,
+          type: 'OVERDUE_ALERT',
+          channel: rentalAndFleetAlertsEnabled ? 'EMAIL' : 'APP',
+          subject: 'Rental Overdue Notice',
+          message: `Your rental is overdue! Please return the vehicle immediately to avoid additional late charges.`,
+          status: rentalAndFleetAlertsEnabled ? 'QUEUED' : 'SENT',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: 'SYSTEM_CRON',
+          updatedBy: 'SYSTEM_CRON'
+        });
 
-          // Notify Owner
-          const ownerNotifId = generateId(IdPrefix.NOTIFICATION);
+        // Notify Owner
+        const ownerNotifId = generateId(IdPrefix.NOTIFICATION);
         const ownerNotifRef = db.collection('notifications').doc(ownerNotifId);
-          batch.set(ownerNotifRef, {
-            id: ownerNotifId,
-            tenantId: rental.tenantId,
-            userId: 'TENANT_ADMIN',
-            type: 'OVERDUE_ALERT',
-            channel: 'EMAIL',
-            subject: 'Vehicle Overdue Alert',
-            message: `Vehicle for rental ${rental.id} is overdue by customer.`,
-            status: 'QUEUED',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            createdBy: 'SYSTEM_CRON',
-            updatedBy: 'SYSTEM_CRON'
-          });
-        }
+        batch.set(ownerNotifRef, {
+          id: ownerNotifId,
+          tenantId: rental.tenantId,
+          userId: 'TENANT_ADMIN',
+          type: 'OVERDUE_ALERT',
+          channel: rentalAndFleetAlertsEnabled ? 'EMAIL' : 'APP',
+          subject: 'Vehicle Overdue Alert',
+          message: `Vehicle for rental ${rental.id} is overdue by customer.`,
+          status: rentalAndFleetAlertsEnabled ? 'QUEUED' : 'SENT',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: 'SYSTEM_CRON',
+          updatedBy: 'SYSTEM_CRON'
+        });
         
         overdueCount++;
       }
@@ -315,24 +309,22 @@ export class CronService {
           updatedBy: 'SYSTEM_CRON'
         });
 
-        if (rentalAndFleetAlertsEnabled) {
-          const notifId = generateId(IdPrefix.NOTIFICATION);
-          const notifRef = db.collection('notifications').doc(notifId);
-          batch.set(notifRef, {
-            id: notifId,
-            tenantId: rental.tenantId,
-            userId: rental.customerId,
-            type: 'UPCOMING_PICKUP',
-            channel: 'EMAIL',
-            subject: 'Upcoming Vehicle Pickup',
-            message: `Your vehicle rental is scheduled for pickup within 24 hours!`,
-            status: 'QUEUED',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            createdBy: 'SYSTEM_CRON',
-            updatedBy: 'SYSTEM_CRON'
-          });
-        }
+        const notifId = generateId(IdPrefix.NOTIFICATION);
+        const notifRef = db.collection('notifications').doc(notifId);
+        batch.set(notifRef, {
+          id: notifId,
+          tenantId: rental.tenantId,
+          userId: rental.customerId,
+          type: 'UPCOMING_PICKUP',
+          channel: rentalAndFleetAlertsEnabled ? 'EMAIL' : 'APP',
+          subject: 'Upcoming Vehicle Pickup',
+          message: `Your vehicle rental is scheduled for pickup within 24 hours!`,
+          status: rentalAndFleetAlertsEnabled ? 'QUEUED' : 'SENT',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: 'SYSTEM_CRON',
+          updatedBy: 'SYSTEM_CRON'
+        });
 
         upcomingCount++;
       }
@@ -371,24 +363,22 @@ export class CronService {
           updatedBy: 'SYSTEM_CRON'
         });
 
-        if (rentalAndFleetAlertsEnabled) {
-          const notifId = generateId(IdPrefix.NOTIFICATION);
-          const notifRef = db.collection('notifications').doc(notifId);
-          batch.set(notifRef, {
-            id: notifId,
-            tenantId: vDoc.tenantId,
-            userId: 'TENANT_ADMIN',
-            type: 'FLEET_ALERT_INSURANCE',
-            channel: 'EMAIL',
-            subject: `Vehicle Document Expired`,
-            message: `The ${vDoc.documentType} document for vehicle ${vDoc.vehicleId} has expired!`,
-            status: 'QUEUED',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            createdBy: 'SYSTEM_CRON',
-            updatedBy: 'SYSTEM_CRON'
-          });
-        }
+        const notifId = generateId(IdPrefix.NOTIFICATION);
+        const notifRef = db.collection('notifications').doc(notifId);
+        batch.set(notifRef, {
+          id: notifId,
+          tenantId: vDoc.tenantId,
+          userId: 'TENANT_ADMIN',
+          type: 'FLEET_ALERT_INSURANCE',
+          channel: rentalAndFleetAlertsEnabled ? 'EMAIL' : 'APP',
+          subject: `Vehicle Document Expired`,
+          message: `The ${vDoc.documentType} document for vehicle ${vDoc.vehicleId} has expired!`,
+          status: rentalAndFleetAlertsEnabled ? 'QUEUED' : 'SENT',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: 'SYSTEM_CRON',
+          updatedBy: 'SYSTEM_CRON'
+        });
 
         expiredCount++;
       }
@@ -396,24 +386,22 @@ export class CronService {
       else if ((diffDays === 7 || diffDays === 3 || diffDays === 1) && vDoc.lastReminderDays !== diffDays) {
         batch.update(doc.ref, { lastReminderDays: diffDays });
 
-        if (rentalAndFleetAlertsEnabled) {
-          const notifId = generateId(IdPrefix.NOTIFICATION);
-          const notifRef = db.collection('notifications').doc(notifId);
-          batch.set(notifRef, {
-            id: notifId,
-            tenantId: vDoc.tenantId,
-            userId: 'TENANT_ADMIN',
-            type: 'FLEET_ALERT_INSURANCE',
-            channel: 'EMAIL',
-            subject: `Vehicle Document Expiring Soon`,
-            message: `The ${vDoc.documentType} document for vehicle ${vDoc.vehicleId} will expire in ${diffDays} days.`,
-            status: 'QUEUED',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            createdBy: 'SYSTEM_CRON',
-            updatedBy: 'SYSTEM_CRON'
-          });
-        }
+        const notifId = generateId(IdPrefix.NOTIFICATION);
+        const notifRef = db.collection('notifications').doc(notifId);
+        batch.set(notifRef, {
+          id: notifId,
+          tenantId: vDoc.tenantId,
+          userId: 'TENANT_ADMIN',
+          type: 'FLEET_ALERT_INSURANCE',
+          channel: rentalAndFleetAlertsEnabled ? 'EMAIL' : 'APP',
+          subject: `Vehicle Document Expiring Soon`,
+          message: `The ${vDoc.documentType} document for vehicle ${vDoc.vehicleId} will expire in ${diffDays} days.`,
+          status: rentalAndFleetAlertsEnabled ? 'QUEUED' : 'SENT',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: 'SYSTEM_CRON',
+          updatedBy: 'SYSTEM_CRON'
+        });
 
         remindersSent++;
       }

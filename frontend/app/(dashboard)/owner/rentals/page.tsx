@@ -105,16 +105,6 @@ export default function RentalsPage() {
         </div>
       </div>
 
-      {/* Quick stats */}
-      {overdueCount > 0 && (
-        <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-2xl">
-          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
-          <p className="text-sm font-medium text-red-700 dark:text-red-300">
-            {overdueCount} rental{overdueCount > 1 ? "s" : ""} overdue — vehicle{overdueCount > 1 ? "s" : ""} not yet returned
-          </p>
-          <ChevronRight className="w-4 h-4 text-red-400 ml-auto" />
-        </div>
-      )}
 
       {/* Table card */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
